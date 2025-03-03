@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLineEdit
-from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtCore import QUrl
+from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLineEdit
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtCore import QUrl
 import sys
 
 class Browser(QMainWindow):
@@ -19,6 +19,7 @@ class Browser(QMainWindow):
         central_widget = QWidget()
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
+        
     def change_browser_url(self):
         url = self.url_bar.text()
         if not url.startswith("https://"):
@@ -29,4 +30,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = Browser()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

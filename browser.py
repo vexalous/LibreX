@@ -1,12 +1,14 @@
 from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLineEdit
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtCore import QUrl
+from PySide6.QtGui import QIcon
 import sys
 
 class Browser(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("LibreX Web Browser")
+        self.setWindowIcon(QIcon('browser/assets/icons/favicons/favicon.ico'))
         
         self.browser = QWebEngineView()
         self.default_search_engine_url = "https://duckduckgo.com"

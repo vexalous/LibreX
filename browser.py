@@ -9,8 +9,9 @@ class Browser(QMainWindow):
         self.setWindowTitle("LibreX Web Browser")
         
         self.browser = QWebEngineView()
-        self.default_search_engine_url = ("https://duckduckgo.com/")
-        self.browser.setUrl(QUrl(default_search_engine_url))
+        self.default_search_engine_url = "https://duckduckgo.com"
+        self.default_search_engine_search_path = "/?q="
+        self.browser.setUrl(QUrl(self.default_search_engine_url))
         
         self.url_bar = QLineEdit()
         self.url_bar.setStyleSheet("""
@@ -37,8 +38,8 @@ class Browser(QMainWindow):
         
     def change_browser_url(self):
         url = self.url_bar.text()
-        if not url.startswith("https://"):
-            url = "https://" + url
+        if not url.startswith("http://") and not url.startswith("https://"):
+            url = self.default_search_engine_url + self.default_search_engine_search_path + url
         self.browser.setUrl(QUrl(url))
 
 if __name__ == "__main__":

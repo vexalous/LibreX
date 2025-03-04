@@ -10,7 +10,21 @@ class Browser(QMainWindow):
         
         self.browser = QWebEngineView()
         self.browser.setUrl(QUrl("https://duckduckgo.com/"))
+        
         self.url_bar = QLineEdit()
+        self.url_bar.setStyleSheet("""
+            QLineEdit {
+                background-color: #333;
+                color: white;
+                border: 1px solid #555;
+                border-radius: 10px;
+                padding: 5px 10px;
+                font-size: 14px;
+            }
+            QLineEdit:focus {
+                border: 1px solid #0078d7;
+            }
+        """)
         self.url_bar.returnPressed.connect(self.change_browser_url)
         
         layout = QVBoxLayout()

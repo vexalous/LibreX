@@ -9,7 +9,8 @@ class Browser(QMainWindow):
         self.setWindowTitle("LibreX Web Browser")
         
         self.browser = QWebEngineView()
-        self.browser.setUrl(QUrl("https://duckduckgo.com/"))
+        self.default_search_engine_url = ("https://duckduckgo.com/")
+        self.browser.setUrl(QUrl(default_search_engine_url))
         
         self.url_bar = QLineEdit()
         self.url_bar.setStyleSheet("""

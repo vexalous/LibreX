@@ -223,7 +223,7 @@ if __name__ == "__main__":
     try:
         app = QApplication(sys.argv)
         window = Browser()
-        window.show()
+        window.showMaximized()
         sys.exit(app.exec())
     except Exception as e:
         logging.exception("Fatal error during application execution.")

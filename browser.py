@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtGui import QIcon
+
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s [%(levelname)-8s] %(message)s',
@@ -188,13 +189,17 @@ class Browser(QMainWindow):
         except Exception as e:
             logging.exception("Error updating URL bar.")
 
+    def truncate_title(self, title, max_length=15):
+        return title if len(title) <= max_length else title[:max_length] + '...'
+
     def update_tab_title(self, browser: QWebEngineView):
         try:
             index = self.tab_widget.indexOf(browser)
             if index != -1:
                 title = browser.page().title()
                 if title:
-                    self.tab_widget.setTabText(index, title)
+                    truncated_title = self.truncate_title(title)
+                    self.tab_widget.setTabText(index, truncated_title)
                 else:
                     self.tab_widget.setTabText(index, browser.url().toString())
         except Exception as e:

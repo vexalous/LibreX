@@ -1,6 +1,7 @@
 import sys
 import time
 import logging
+import traceback
 
 from PySide6.QtCore import QUrl, Qt, QObject, Signal, QRunnable, QThreadPool, QTimer
 from PySide6.QtWidgets import (
@@ -15,6 +16,11 @@ logging.basicConfig(
     format='%(asctime)s [%(levelname)-8s] %(message)s',
     datefmt='%H:%M:%S'
 )
+
+def global_exception_hook(exctype, value, tb):
+    logging.exception("Unhandled exception", exc_info=(exctype, value, tb))
+    sys.__excepthook__(exctype, value, tb)
+sys.excepthook = global_exception_hook
 
 class WorkerSignals(QObject):
     result = Signal(QUrl, int)
@@ -43,64 +49,67 @@ class NavigationTask(QRunnable):
 class Browser(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("LibreX Web Browser")
         try:
-            icon = QIcon('browser/assets/icons/favicons/favicon.ico')
-            if icon.isNull():
-                logging.warning("Browser icon could not be loaded.")
-            self.setWindowIcon(icon)
+            self.setWindowTitle("LibreX Web Browser")
+            try:
+                icon = QIcon('browser/assets/icons/favicons/favicon.ico')
+                if icon.isNull():
+                    logging.warning("Browser icon could not be loaded.")
+                self.setWindowIcon(icon)
+            except Exception as e:
+                logging.exception("Error setting window icon.")
+
+            self.threadpool = QThreadPool.globalInstance()
+            self.current_navigation_id = 0
+
+            self.default_search_engine_url = "https://duckduckgo.com"
+            self.default_search_engine_search_path = "/?q="
+
+            self.url_bar = QLineEdit()
+            self.url_bar.setPlaceholderText("Enter URL or search query")
+            self.url_bar.setStyleSheet(
+                """
+                QLineEdit {
+                    background-color: #333;
+                    color: white;
+                    border: 1px solid #555;
+                    border-radius: 10px;
+                    padding: 5px 10px;
+                    font-size: 14px;
+                }
+                QLineEdit:focus {
+                    border: 1px solid #0078d7;
+                }
+                """
+            )
+            self.url_bar.returnPressed.connect(self.on_url_entered)
+
+            self.progress_bar = QProgressBar()
+            self.progress_bar.setMaximum(100)
+            self.progress_bar.hide()
+
+            self.tab_widget = QTabWidget()
+            self.tab_widget.setTabsClosable(True)
+            self.tab_widget.setMovable(True)
+            self.tab_widget.tabCloseRequested.connect(self.close_current_tab)
+            self.tab_widget.currentChanged.connect(self.current_tab_changed)
+
+            self.plus_button = QPushButton("+")
+            self.plus_button.setFixedSize(24, 24)
+            self.plus_button.clicked.connect(lambda: self.new_tab())
+            self.tab_widget.setCornerWidget(self.plus_button, Qt.TopRightCorner)
+
+            self.new_tab()
+
+            central_widget = QWidget()
+            layout = QVBoxLayout()
+            layout.addWidget(self.url_bar)
+            layout.addWidget(self.progress_bar)
+            layout.addWidget(self.tab_widget)
+            central_widget.setLayout(layout)
+            self.setCentralWidget(central_widget)
         except Exception as e:
-            logging.exception("Error setting window icon.")
-
-        self.threadpool = QThreadPool.globalInstance()
-        self.current_navigation_id = 0
-
-        self.default_search_engine_url = "https://duckduckgo.com"
-        self.default_search_engine_search_path = "/?q="
-
-        self.url_bar = QLineEdit()
-        self.url_bar.setPlaceholderText("Enter URL or search query")
-        self.url_bar.setStyleSheet(
-            """
-            QLineEdit {
-                background-color: #333;
-                color: white;
-                border: 1px solid #555;
-                border-radius: 10px;
-                padding: 5px 10px;
-                font-size: 14px;
-            }
-            QLineEdit:focus {
-                border: 1px solid #0078d7;
-            }
-            """
-        )
-        self.url_bar.returnPressed.connect(self.on_url_entered)
-
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setMaximum(100)
-        self.progress_bar.hide()
-
-        self.tab_widget = QTabWidget()
-        self.tab_widget.setTabsClosable(True)
-        self.tab_widget.setMovable(True)
-        self.tab_widget.tabCloseRequested.connect(self.close_current_tab)
-        self.tab_widget.currentChanged.connect(self.current_tab_changed)
-
-        self.plus_button = QPushButton("+")
-        self.plus_button.setFixedSize(24, 24)
-        self.plus_button.clicked.connect(lambda: self.new_tab())
-        self.tab_widget.setCornerWidget(self.plus_button, Qt.TopRightCorner)
-
-        self.new_tab()
-
-        central_widget = QWidget()
-        layout = QVBoxLayout()
-        layout.addWidget(self.url_bar)
-        layout.addWidget(self.progress_bar)
-        layout.addWidget(self.tab_widget)
-        central_widget.setLayout(layout)
-        self.setCentralWidget(central_widget)
+            logging.exception("Error during Browser initialization.")
 
     def new_tab(self, url: str = None, label: str = "New Tab", switch: bool = True):
         try:
@@ -108,6 +117,7 @@ class Browser(QMainWindow):
             browser.loadStarted.connect(self.on_load_started)
             browser.loadProgress.connect(self.on_load_progress)
             browser.loadFinished.connect(self.on_load_finished)
+
             if url is None:
                 url_obj = QUrl(self.default_search_engine_url)
             else:
@@ -118,10 +128,22 @@ class Browser(QMainWindow):
             if switch:
                 self.tab_widget.setCurrentIndex(index)
 
-            browser.urlChanged.connect(lambda qurl, browser=browser: self.update_url_bar(qurl, browser))
-            browser.loadFinished.connect(lambda ok, browser=browser: self.update_tab_title(browser))
+            browser.urlChanged.connect(lambda qurl, browser=browser: self.safe_update_url_bar(qurl, browser))
+            browser.loadFinished.connect(lambda ok, browser=browser: self.safe_update_tab_title(ok, browser))
         except Exception as e:
             logging.exception("Error creating a new tab.")
+
+    def safe_update_url_bar(self, qurl: QUrl, browser: QWebEngineView):
+        try:
+            self.update_url_bar(qurl, browser)
+        except Exception as e:
+            logging.exception("Error in safe_update_url_bar: %s", e)
+
+    def safe_update_tab_title(self, ok: bool, browser: QWebEngineView):
+        try:
+            self.update_tab_title(browser)
+        except Exception as e:
+            logging.exception("Error in safe_update_tab_title: %s", e)
 
     def close_current_tab(self, index: int):
         try:
@@ -172,7 +194,11 @@ class Browser(QMainWindow):
             logging.debug(f"Navigation result received: {url.toString()} (id {nav_id}).")
             current_browser = self.tab_widget.currentWidget()
             if current_browser:
-                current_browser.stop()
+                try:
+                    # Try stopping any ongoing load (if applicable).
+                    current_browser.stop()
+                except Exception as ex:
+                    logging.warning("Error stopping current browser load: %s", ex)
                 current_browser.setUrl(url)
             else:
                 logging.error("No active browser tab available to load the URL.")
@@ -190,7 +216,11 @@ class Browser(QMainWindow):
             logging.exception("Error updating URL bar.")
 
     def truncate_title(self, title, max_length=15):
-        return title if len(title) <= max_length else title[:max_length] + '...'
+        try:
+            return title if len(title) <= max_length else title[:max_length] + '...'
+        except Exception as e:
+            logging.exception("Error truncating title.")
+            return title
 
     def update_tab_title(self, browser: QWebEngineView):
         try:
@@ -206,18 +236,27 @@ class Browser(QMainWindow):
             logging.exception("Error updating tab title.")
 
     def on_load_started(self):
-        if self.sender() == self.tab_widget.currentWidget():
-            self.progress_bar.show()
-            self.progress_bar.setValue(0)
+        try:
+            if self.sender() == self.tab_widget.currentWidget():
+                self.progress_bar.show()
+                self.progress_bar.setValue(0)
+        except Exception as e:
+            logging.exception("Error in on_load_started.")
 
     def on_load_progress(self, progress: int):
-        if self.sender() == self.tab_widget.currentWidget():
-            self.progress_bar.setValue(progress)
+        try:
+            if self.sender() == self.tab_widget.currentWidget():
+                self.progress_bar.setValue(progress)
+        except Exception as e:
+            logging.exception("Error in on_load_progress.")
 
     def on_load_finished(self, ok: bool):
-        if self.sender() == self.tab_widget.currentWidget():
-            self.progress_bar.setValue(100)
-            QTimer.singleShot(500, self.progress_bar.hide)
+        try:
+            if self.sender() == self.tab_widget.currentWidget():
+                self.progress_bar.setValue(100)
+                QTimer.singleShot(500, self.progress_bar.hide)
+        except Exception as e:
+            logging.exception("Error in on_load_finished.")
 
 if __name__ == "__main__":
     try:

@@ -38,7 +38,7 @@ class NavigationTask(QRunnable):
             try:
                 time.sleep(0.05)
             except Exception as e_sleep:
-                logging.warning(f"Sleep interrupted or failed: {e_sleep}") # Non-critical, but log if sleep fails
+                logging.warning(f"Sleep interrupted or failed: {e_sleep}")
 
             try:
                 url = QUrl(self.url_str)
@@ -94,21 +94,7 @@ class Browser(QMainWindow):
             try:
                 self.url_bar = QLineEdit()
                 self.url_bar.setPlaceholderText("Enter URL or search query")
-                self.url_bar.setStyleSheet(
-                    """
-                    QLineEdit {
-                        background-color: #333;
-                        color: white;
-                        border: 1px solid #555;
-                        border-radius: 10px;
-                        padding: 5px 10px;
-                        font-size: 14px;
-                    }
-                    QLineEdit:focus {
-                        border: 1px solid #0078d7;
-                    }
-                    """
-                )
+                self.load_stylesheet('../browser/styles/stylesheets/urlbar/urlbar.qss')
                 self.url_bar.returnPressed.connect(self.on_url_entered)
             except Exception as e_url_bar_setup:
                 logging.exception(f"Error setting up URL bar: {e_url_bar_setup}")

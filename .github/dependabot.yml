@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: "python"
+    directory: "/"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "pypi"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-name: "sys"
+      - dependency-name: "time"
+      - dependency-name: "logging"
+      - dependency-name: "traceback"
+      - dependency-name: "PySide6"

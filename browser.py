@@ -94,7 +94,7 @@ class Browser(QMainWindow):
             try:
                 self.url_bar = QLineEdit()
                 self.url_bar.setPlaceholderText("Enter URL or search query")
-                self.load_stylesheet('/browser/styles/stylesheets/urlbar/urlbar.qss')
+                self.load_stylesheet('browser/styles/stylesheets/urlbar/urlbar.qss')
                 self.url_bar.returnPressed.connect(self.on_url_entered)
             except Exception as e_url_bar_setup:
                 logging.exception(f"Error setting up URL bar: {e_url_bar_setup}")

@@ -141,7 +141,12 @@ class Browser(QMainWindow):
 
         except Exception as e_init:
             logging.exception(f"Critical error during Browser initialization: {e_init}")
-
+    def load_stylesheet(self, path):
+        try:
+            with open(path, 'r') as file:
+                self.setStyleSheet(file.read())
+        except Exception as e:
+            logging.error(f"Failed to load stylesheet from {path}: {e}")
     def new_tab(self, url: str = None, label: str = "New Tab", switch: bool = True):
         browser = None
         try:

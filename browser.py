@@ -141,6 +141,21 @@ class Browser(QMainWindow):
 
         except Exception as e_init:
             logging.exception(f"Critical error during Browser initialization: {e_init}")
+    def read_csp_header(file_path):
+        try:
+            with open(file_path, 'r') as file:
+                return file.read().strip()
+        except Exception as e_file:
+            logging.exception(f"Error reading CSP header file: {e_file}")
+            return
+    def set_csp_header(self):
+        try:
+            csp_header = read_csp_header("browser/config/csp/csp_header.txt")
+            if csp_header:
+                self.web_view.page().profile().setHttpUserAgent(csp_header)
+                self.web_view.page().profile().setHttpHeader("Content-Security-Policy", csp_header.encode('utf-8'))
+        except Exception as e_csp:
+            logging.exception(f"Error setting CSP header: {e_csp}")
     def load_stylesheet(self, path):
         try:
             with open(path, 'r') as file:

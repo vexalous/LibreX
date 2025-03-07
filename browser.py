@@ -23,6 +23,49 @@ def global_exception_hook(exctype, value, tb):
     sys.__excepthook__(exctype, value, tb)
 sys.excepthook = global_exception_hook
 
+def load_search_engine_configuration():
+    file_path = 'browser/config/search_engine/search_engine.txt'
+    configuration = {}
+    
+    if not os.path.exists(file_path):
+        logging.error(f"Configuration file not found: {file_path}")
+        return configuration
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            line_number = 0
+            for line in f:
+                line_number += 1
+                cleaned_line = line.strip()
+                if not cleaned_line or cleaned_line.startswith('#'):
+                    continue
+                if '=' not in cleaned_line:
+                    logging.warning(f"Line {line_number} in {file_path} does not contain '=': {cleaned_line}")
+                    continue
+                try:
+                    key, value = cleaned_line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    if key and value:
+                        configuration[key] = value
+                    else:
+                        logging.warning(f"Line {line_number} in {file_path} has an empty key or value: {cleaned_line}")
+                except Exception as parse_exception:
+                    logging.error(f"Error parsing line {line_number} in {file_path}: {cleaned_line}. Exception: {parse_exception}")
+    except Exception as e:
+        logging.exception(f"Failed to load configuration from file: {file_path}. Exception: {e}")
+    
+    return configuration
+def set_search_engine(self):
+        configuration = load_search_engine_configuration()
+
+        if not configuration:
+            logging.error("No configuration found, using default values.")
+            self.default_search_engine_url = "https://duckduckgo.com"
+            self.default_search_engine_search_path = "/?q="
+        else:
+            self.default_search_engine_url = configuration.get('search_engine', 'https://duckduckgo.com')
+            self.default_search_engine_search_path = configuration.get('search_path', '/?q=')
 def load_shortcuts(file_path):
     shortcuts = {}
     
@@ -69,10 +112,6 @@ class NavigationTask(QRunnable):
 
     def run(self):
         try:
-            try:
-                time.sleep(0.05)
-            except Exception as e_sleep:
-                logging.warning(f"Sleep interrupted or failed: {e_sleep}")
 
             try:
                 url = QUrl(self.url_str)
@@ -121,9 +160,6 @@ class Browser(QMainWindow):
                 logging.critical(f"Failed to initialize thread pool: {e_threadpool}")
 
             self.current_navigation_id = 0
-
-            self.default_search_engine_url = "https://duckduckgo.com"
-            self.default_search_engine_search_path = "/?q="
 
             try:
                 self.url_bar = QLineEdit()

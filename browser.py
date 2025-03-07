@@ -252,7 +252,10 @@ class Browser(QMainWindow):
                 except Exception as e_remove_tab:
                     logging.error(f"Failed to remove tab at index {index}: {e_remove_tab}")
             else:
-                logging.info("Attempted to close the last remaining tab; operation skipped.")
+                try:
+                    self.close_browser()
+                except Exception as e_close_browser_no_tabs_left
+                    logging.exception(f"Error occured while attempting to close browser, no tabs left: {e_close_browser_no_tabs_left}")
         except Exception as e_close_tab:
             logging.exception("Error closing current tab.")
 

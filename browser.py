@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
     QLineEdit, QTabWidget, QPushButton, QProgressBar
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QKeySequence, QShortcut
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -122,6 +122,11 @@ class Browser(QMainWindow):
                 self.tab_widget.setCornerWidget(self.plus_button, Qt.TopRightCorner)
             except Exception as e_plus_button_setup:
                 logging.exception(f"Error setting up plus button: {e_plus_button_setup}")
+            try:
+                self.new_tab_shortcut = QShortcut(QKeySequence("Ctrl+T"), self)
+                self.new_tab_shortcut.activated.connect(self.new_tab)
+            except Exception as e_new_tab_shortcut:
+                logging.exception(f"Error when calling new tab shortcut: {e_new_tab_shortcut}")
 
             try:
                 self.new_tab()

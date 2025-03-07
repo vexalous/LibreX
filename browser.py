@@ -23,9 +23,11 @@ def global_exception_hook(exctype, value, tb):
     sys.__excepthook__(exctype, value, tb)
 sys.excepthook = global_exception_hook
 
+
 class WorkerSignals(QObject):
     result = Signal(QUrl, int)
     error = Signal(str, int)
+
 
 class NavigationTask(QRunnable):
     def __init__(self, url_str: str, nav_id: int):
@@ -36,7 +38,6 @@ class NavigationTask(QRunnable):
 
     def run(self):
         try:
-
             try:
                 url = QUrl(self.url_str)
             except Exception as e_url_creation:
@@ -44,8 +45,10 @@ class NavigationTask(QRunnable):
                 self.signals.error.emit(f"Invalid URL format: {e_url_creation}", self.nav_id)
                 return
 
+            # If the URL isn't valid or lacking a scheme, build a search URL.
             if not url.isValid() or url.scheme() == "":
                 try:
+                    # Here you could integrate the configured search engine if desired.
                     search_engine = "https://duckduckgo.com"
                     search_path = "/?q="
                     url = QUrl(search_engine + search_path + self.url_str)
@@ -62,14 +65,21 @@ class NavigationTask(QRunnable):
 
 
 class Browser(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        # Initialize UI elements, etc.
+        self.set_search_engine()
+        # Additional initialization goes here
+
+    @staticmethod
     def load_search_engine_configuration():
         file_path = 'browser/config/search_engine/search_engine.txt'
         configuration = {}
-    
+
         if not os.path.exists(file_path):
             logging.error(f"Configuration file not found: {file_path}")
             return configuration
-    
+
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 line_number = 0
@@ -93,10 +103,11 @@ class Browser(QMainWindow):
                         logging.error(f"Error parsing line {line_number} in {file_path}: {cleaned_line}. Exception: {parse_exception}")
         except Exception as e:
             logging.exception(f"Failed to load configuration from file: {file_path}. Exception: {e}")
-    
+
         return configuration
-def set_search_engine(self):
-        configuration = load_search_engine_configuration()
+
+    def set_search_engine(self):
+        configuration = self.load_search_engine_configuration()
 
         if not configuration:
             logging.error("No configuration found, using default values.")

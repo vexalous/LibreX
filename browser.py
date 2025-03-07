@@ -129,7 +129,7 @@ class Browser(QMainWindow):
                 logging.exception(f"Error when calling new tab shortcut: {e_new_tab_shortcut}")
             try:
                 self.close_tab_shortcut = QShortcut(QKeySequence("Ctrl+W"), self)
-                self.close_tab_shortcut.activated.connect(self.close_current_tab)
+                self.close_tab_shortcut.activated.connect(self.close_current_tab_index)
             except Exception as e_close_tab_shortcut:
                 logging.exception(f"Error when calling close tab shortcut: {e_close_tab_shortcut}")
 
@@ -219,7 +219,12 @@ class Browser(QMainWindow):
                 except:
                     logging.warning("Failed to cleanup partially created browser view.")
 
-
+    def close_current_tab_index(self):
+        try:
+            current_tab_index = self.tab_widget.currentIndex()
+            self.close_current_tab(current_tab_index)
+        except Exception as e_close_tab_index:
+            logging.exception(f"Error occured in close_current_tab_index: {e_close_tab_index}")
     def safe_update_url_bar(self, qurl: QUrl, browser: QWebEngineView):
         try:
             self.update_url_bar(qurl, browser)

@@ -70,11 +70,6 @@ class NavigationTask(QRunnable):
     def run(self):
         try:
             try:
-                time.sleep(0.05)
-            except Exception as e_sleep:
-                logging.warning(f"Sleep interrupted or failed: {e_sleep}")
-
-            try:
                 url = QUrl(self.url_str)
             except Exception as e_url_creation:
                 logging.error(f"Failed to create QUrl from '{self.url_str}': {e_url_creation}")

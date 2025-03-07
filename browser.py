@@ -23,7 +23,46 @@ def global_exception_hook(exctype, value, tb):
     sys.__excepthook__(exctype, value, tb)
 sys.excepthook = global_exception_hook
 
-def load_search_engine_configuration():
+class WorkerSignals(QObject):
+    result = Signal(QUrl, int)
+    error = Signal(str, int)
+
+class NavigationTask(QRunnable):
+    def __init__(self, url_str: str, nav_id: int):
+        super().__init__()
+        self.url_str = url_str
+        self.nav_id = nav_id
+        self.signals = WorkerSignals()
+
+    def run(self):
+        try:
+
+            try:
+                url = QUrl(self.url_str)
+            except Exception as e_url_creation:
+                logging.error(f"Failed to create QUrl from '{self.url_str}': {e_url_creation}")
+                self.signals.error.emit(f"Invalid URL format: {e_url_creation}", self.nav_id)
+                return
+
+            if not url.isValid() or url.scheme() == "":
+                try:
+                    search_engine = "https://duckduckgo.com"
+                    search_path = "/?q="
+                    url = QUrl(search_engine + search_path + self.url_str)
+                except Exception as e_search_url_creation:
+                    logging.error(f"Failed to create search URL: {e_search_url_creation}")
+                    self.signals.error.emit(f"Search URL creation error: {e_search_url_creation}", self.nav_id)
+                    return
+
+            self.signals.result.emit(url, self.nav_id)
+
+        except Exception as e_run:
+            logging.exception("NavigationTask encountered a critical error in run method.")
+            self.signals.error.emit(f"Navigation task critical failure: {str(e_run)}", self.nav_id)
+
+
+class Browser(QMainWindow):
+    def load_search_engine_configuration():
     file_path = 'browser/config/search_engine/search_engine.txt'
     configuration = {}
     
@@ -98,46 +137,7 @@ def load_shortcuts(file_path):
         logging.exception(f"Failed to load shortcuts from file: {file_path}. Exception: {e}")
     
     return shortcuts
-
-class WorkerSignals(QObject):
-    result = Signal(QUrl, int)
-    error = Signal(str, int)
-
-class NavigationTask(QRunnable):
-    def __init__(self, url_str: str, nav_id: int):
-        super().__init__()
-        self.url_str = url_str
-        self.nav_id = nav_id
-        self.signals = WorkerSignals()
-
-    def run(self):
-        try:
-
-            try:
-                url = QUrl(self.url_str)
-            except Exception as e_url_creation:
-                logging.error(f"Failed to create QUrl from '{self.url_str}': {e_url_creation}")
-                self.signals.error.emit(f"Invalid URL format: {e_url_creation}", self.nav_id)
-                return
-
-            if not url.isValid() or url.scheme() == "":
-                try:
-                    search_engine = "https://duckduckgo.com"
-                    search_path = "/?q="
-                    url = QUrl(search_engine + search_path + self.url_str)
-                except Exception as e_search_url_creation:
-                    logging.error(f"Failed to create search URL: {e_search_url_creation}")
-                    self.signals.error.emit(f"Search URL creation error: {e_search_url_creation}", self.nav_id)
-                    return
-
-            self.signals.result.emit(url, self.nav_id)
-
-        except Exception as e_run:
-            logging.exception("NavigationTask encountered a critical error in run method.")
-            self.signals.error.emit(f"Navigation task critical failure: {str(e_run)}", self.nav_id)
-
-
-class Browser(QMainWindow):
+    
     def __init__(self):
         super().__init__()
         try:

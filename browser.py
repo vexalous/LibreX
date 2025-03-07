@@ -2,6 +2,7 @@ import sys
 import time
 import logging
 import traceback
+import os
 
 from PySide6.QtCore import QUrl, Qt, QObject, Signal, QRunnable, QThreadPool, QTimer
 from PySide6.QtWidgets import (
@@ -21,6 +22,39 @@ def global_exception_hook(exctype, value, tb):
     logging.exception("Unhandled exception", exc_info=(exctype, value, tb))
     sys.__excepthook__(exctype, value, tb)
 sys.excepthook = global_exception_hook
+
+def load_shortcuts(file_path):
+    shortcuts = {}
+    
+    if not os.path.exists(file_path):
+        logging.error(f"Shortcuts file not found: {file_path}")
+        return shortcuts
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            line_number = 0
+            for line in f:
+                line_number += 1
+                cleaned_line = line.strip()
+                if not cleaned_line or cleaned_line.startswith('#'):
+                    continue
+                if '=' not in cleaned_line:
+                    logging.warning(f"Line {line_number} in {file_path} does not contain '=': {cleaned_line}")
+                    continue
+                try:
+                    key, value = cleaned_line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    if key and value:
+                        shortcuts[key] = value
+                    else:
+                        logging.warning(f"Line {line_number} in {file_path} has an empty key or value: {cleaned_line}")
+                except Exception as parse_exception:
+                    logging.error(f"Error parsing line {line_number} in {file_path}: {cleaned_line}. Exception: {parse_exception}")
+    except Exception as e:
+        logging.exception(f"Failed to load shortcuts from file: {file_path}. Exception: {e}")
+    
+    return shortcuts
 
 class WorkerSignals(QObject):
     result = Signal(QUrl, int)

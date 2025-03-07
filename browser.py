@@ -126,12 +126,17 @@ class Browser(QMainWindow):
                 self.new_tab_shortcut = QShortcut(QKeySequence("Ctrl+T"), self)
                 self.new_tab_shortcut.activated.connect(self.new_tab)
             except Exception as e_new_tab_shortcut:
-                logging.exception(f"Error when calling new tab shortcut: {e_new_tab_shortcut}")
+                logging.exception(f"Error while calling new tab shortcut: {e_new_tab_shortcut}")
             try:
                 self.close_tab_shortcut = QShortcut(QKeySequence("Ctrl+W"), self)
                 self.close_tab_shortcut.activated.connect(self.close_current_tab_index)
             except Exception as e_close_tab_shortcut:
-                logging.exception(f"Error when calling close tab shortcut: {e_close_tab_shortcut}")
+                logging.exception(f"Error while calling close tab shortcut: {e_close_tab_shortcut}")
+            try: 
+                self.close_browser_shortcut = QShortcut(QKeySequence("Ctrl+Shift+W"), self)
+                self.close_browser_shortcut.activated.connect(self.close_browser)
+            except Exception as e_close_browser_shortcut:
+                logging.exception(f"Error while calling close browser shortcut: {e_close_browser_shortcut}")
 
             try:
                 self.new_tab()
@@ -151,6 +156,8 @@ class Browser(QMainWindow):
 
         except Exception as e_init:
             logging.exception(f"Critical error during Browser initialization: {e_init}")
+    def close_browser(self):
+        self.close()
     def read_csp_header(file_path):
         try:
             with open(file_path, 'r') as file:

@@ -127,6 +127,11 @@ class Browser(QMainWindow):
                 self.new_tab_shortcut.activated.connect(self.new_tab)
             except Exception as e_new_tab_shortcut:
                 logging.exception(f"Error when calling new tab shortcut: {e_new_tab_shortcut}")
+            try:
+                self.close_tab_shortcut = QShortcut(QKeySequence("Ctrl+W"), self)
+                self.close_tab_shortcut.activated.connect(self.close_current_tab)
+            except Exception as e_close_tab_shortcut:
+                logging.exception(f"Error when calling close tab shortcut: {e_close_tab_shortcut}")
 
             try:
                 self.new_tab()

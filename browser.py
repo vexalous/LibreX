@@ -139,8 +139,6 @@ class NavigationTask(QRunnable):
 
             if not url.isValid() or url.scheme() == "":
                 try:
-                    search_engine = "https://duckduckgo.com"
-                    search_path = "/?q="
                     url = QUrl(default_search_engine + default_search_engine_search_path + self.url_str)
                 except Exception as e_search_url_creation:
                     logging.error(f"Failed to create search URL: {e_search_url_creation}")

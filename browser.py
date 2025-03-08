@@ -53,7 +53,6 @@ def load_shortcuts(file_path):
                     logging.error(f"Error parsing line {line_number} in {file_path}: {cleaned_line}. Exception: {parse_exception}")
     except Exception as e:
         logging.exception(f"Failed to load shortcuts from file: {file_path}. Exception: {e}")
-    
     return shortcuts
 
 class WorkerSignals(QObject):
@@ -97,6 +96,26 @@ class Browser(QMainWindow):
     def __init__(self):
         super().__init__()
         try:
+            try:
+                self.shortcuts = load_shortcuts("browser/config/shortcuts/shortcuts.txt")
+            except Exception as e_shortcuts:
+                logging.error(f"Failed to load shortcuts: {e_shortcuts}")
+                self.shortcuts = {}
+            try:
+                self.new_tab_shortcut = QShortcut(QKeySequence(self.shortcuts.get("new_tab", "Ctrl+T")), self)
+                self.new_tab_shortcut.activated.connect(self.new_tab)
+            except Exception as e_new_tab_shortcut:
+                logging.exception(f"Error while calling new tab shortcut: {e_new_tab_shortcut}")
+            try:
+                self.close_tab_shortcut = QShortcut(QKeySequence(self.shortcuts.get("close_tab", "Ctrl+W")), self)
+                self.close_tab_shortcut.activated.connect(self.close_current_tab_index)
+            except Exception as e_close_tab_shortcut:
+                logging.exception(f"Error while calling close tab shortcut: {e_close_tab_shortcut}")
+            try:
+                self.close_browser_shortcut = QShortcut(QKeySequence(self.shortcuts.get("close_browser", "Ctrl+Shift+W")), self)
+                self.close_browser_shortcut.activated.connect(self.close_browser)
+            except Exception as e_close_browser_shortcut:
+                logging.exception(f"Error while calling close browser shortcut: {e_close_browser_shortcut}")
             try:
                 self.setWindowTitle("LibreX Web Browser")
             except Exception as e_set_title:
@@ -151,21 +170,6 @@ class Browser(QMainWindow):
                 self.tab_widget.setCornerWidget(self.plus_button, Qt.TopRightCorner)
             except Exception as e_plus_button_setup:
                 logging.exception(f"Error setting up plus button: {e_plus_button_setup}")
-            try:
-                self.new_tab_shortcut = QShortcut(QKeySequence("Ctrl+T"), self)
-                self.new_tab_shortcut.activated.connect(self.new_tab)
-            except Exception as e_new_tab_shortcut:
-                logging.exception(f"Error while calling new tab shortcut: {e_new_tab_shortcut}")
-            try:
-                self.close_tab_shortcut = QShortcut(QKeySequence("Ctrl+W"), self)
-                self.close_tab_shortcut.activated.connect(self.close_current_tab_index)
-            except Exception as e_close_tab_shortcut:
-                logging.exception(f"Error while calling close tab shortcut: {e_close_tab_shortcut}")
-            try: 
-                self.close_browser_shortcut = QShortcut(QKeySequence("Ctrl+Shift+W"), self)
-                self.close_browser_shortcut.activated.connect(self.close_browser)
-            except Exception as e_close_browser_shortcut:
-                logging.exception(f"Error while calling close browser shortcut: {e_close_browser_shortcut}")
 
             try:
                 self.new_tab()

@@ -139,7 +139,7 @@ class NavigationTask(QRunnable):
 
             if not url.isValid() or url.scheme() == "":
                 try:
-                    url = QUrl(default_search_engine + default_search_engine_search_path + self.url_str)
+                    url = QUrl(''.join([default_search_engine, default_search_engine_search_path, self.url_str]))
                 except Exception as e_search_url_creation:
                     logging.error(f"Failed to create search URL: {e_search_url_creation}")
                     self.signals.error.emit(f"Search URL creation error: {e_search_url_creation}", self.nav_id)
@@ -401,7 +401,7 @@ class Browser(QMainWindow):
 
             if not user_input.lower().startswith("http://") and not user_input.lower().startswith("https://"):
                 if '.' in user_input:
-                    user_input = "https://" + user_input
+                    user_input = ''.join(["https://", user_input])
 
             try:
                 task = NavigationTask(user_input, current_id)
@@ -460,7 +460,7 @@ class Browser(QMainWindow):
 
     def truncate_title(self, title, max_length=15):
         try:
-            return title if len(title) <= max_length else title[:max_length] + '...'
+            return title if len(title) <= max_length else ''.join([title[:max_length], '...'])
         except Exception as e_truncate_title:
             logging.exception("Error truncating title.")
             return title

@@ -399,9 +399,10 @@ class Browser(QMainWindow):
             self.current_navigation_id += 1
             current_id = self.current_navigation_id
 
-            if not user_input.lower().startswith("http://") and not user_input.lower().startswith("https://"):
-                if '.' in user_input:
-                    user_input = ''.join(["https://", user_input])
+            user_input_lower = user_input.lower()
+            if not user_input_lower.startswith(("http://", "https://")) and '.' in user_input:
+                user_input = ''.join(['https://', user_input])
+
 
             try:
                 task = NavigationTask(user_input, current_id)

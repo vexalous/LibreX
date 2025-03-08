@@ -396,8 +396,9 @@ class Browser(QMainWindow):
             if not user_input:
                 return
 
-            self.current_navigation_id += 1
-            current_id = self.current_navigation_id
+            current_id = self.current_navigation_id + 1
+            self.current_navigation_id = current_id
+
 
             user_input_lower = user_input.lower()
             if not user_input_lower.startswith(("http://", "https://")) and '.' in user_input:

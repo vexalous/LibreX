@@ -1,1 +1,1 @@
-
+favicon=browser\assets\icons\favicons\favicon.ico

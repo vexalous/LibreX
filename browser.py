@@ -154,7 +154,6 @@ class NavigationTask(QRunnable):
             self.signals.error.emit(f"Navigation task critical failure: {str(e_run)}", self.nav_id)
 try:
     browser_favicon_path = set_favicon("browser/config/favicon/favicon.txt").get("favicon", "browser/assets/icons/favicons/favicon.ico")
-    print(browser_favicon_path)
 except Exception as e_load_favicon_config:
     logging.error(f"Failed to load favicon config: {e_load_favicon_config}")
     browser_favicon_path = "browser/assets/icons/favicons/favicon.ico"

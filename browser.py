@@ -23,6 +23,38 @@ def global_exception_hook(exctype, value, tb):
     sys.__excepthook__(exctype, value, tb)
 sys.excepthook = global_exception_hook
 
+def load_search_engine_config(file_path):
+    search_engine_config = {}
+    
+    if not os.path.exists(file_path):
+        logging.error(f"Search engine config file not found: {file_path}")
+        return search_engine_config
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            line_number = 0
+            for line in f:
+                line_number += 1
+                cleaned_line = line.strip()
+                if not cleaned_line or cleaned_line.startswith('#'):
+                    continue
+                if '=' not in cleaned_line:
+                    logging.warning(f"Line {line_number} in {file_path} does not contain '=': {cleaned_line}")
+                    continue
+                try:
+                    key, value = cleaned_line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    if key and value:
+                        search_engine_config[key] = value
+                    else:
+                        logging.warning(f"Line {line_number} in {file_path} has an empty key or value: {cleaned_line}")
+                except Exception as parse_exception:
+                    logging.error(f"Error parsing line {line_number} in {file_path}: {cleaned_line}. Exception: {parse_exception}")
+    except Exception as e:
+        logging.exception(f"Failed to load config from file: {file_path}. Exception: {e}")
+    return search_engine_config
+
 def load_shortcuts(file_path):
     shortcuts = {}
     
@@ -79,7 +111,7 @@ class NavigationTask(QRunnable):
                 try:
                     search_engine = "https://duckduckgo.com"
                     search_path = "/?q="
-                    url = QUrl(search_engine + search_path + self.url_str)
+                    url = QUrl(default_search_engine + default_search_engine_search_path + self.url_str)
                 except Exception as e_search_url_creation:
                     logging.error(f"Failed to create search URL: {e_search_url_creation}")
                     self.signals.error.emit(f"Search URL creation error: {e_search_url_creation}", self.nav_id)
@@ -90,17 +122,25 @@ class NavigationTask(QRunnable):
         except Exception as e_run:
             logging.exception("NavigationTask encountered a critical error in run method.")
             self.signals.error.emit(f"Navigation task critical failure: {str(e_run)}", self.nav_id)
-
-
+try:
+    default_search_engine = load_search_engine_config("browser/config/search_engine/search_engine.txt").get("default_search_engine", "https://duckduckgo.com")
+except Exception as e_search_engine_config:
+    logging.error(f"Failed to load search engine config: {e_search_engine_config}")
+    default_search_engine = "https://duckduckgo.com"
+try:
+    default_search_engine_search_path = load_search_engine_config("browser/config/search_engine/search_engine.txt").get("default_search_engine_search_path", "/?q=")
+except Exception as e_search_engine_config:
+    logging.error(f"Failed to load search engine config: {e_search_engine_config}")
+    default_search_engine_search_path = "/?q="
+try:
+    shortcuts = load_shortcuts("browser/config/shortcuts/shortcuts.txt")
+except Exception as e_shortcuts:
+    logging.error(f"Failed to load shortcuts: {e_shortcuts}")
+    shortcuts = {}
 class Browser(QMainWindow):
     def __init__(self):
         super().__init__()
         try:
-            try:
-                self.shortcuts = load_shortcuts("browser/config/shortcuts/shortcuts.txt")
-            except Exception as e_shortcuts:
-                logging.error(f"Failed to load shortcuts: {e_shortcuts}")
-                self.shortcuts = {}
             try:
                 self.new_tab_shortcut = QShortcut(QKeySequence(self.shortcuts.get("new_tab", "Ctrl+T")), self)
                 self.new_tab_shortcut.activated.connect(self.new_tab)
@@ -137,7 +177,6 @@ class Browser(QMainWindow):
             self.current_navigation_id = 0
 
             self.default_search_engine_url = "https://duckduckgo.com"
-            self.default_search_engine_search_path = "/?q="
 
             try:
                 self.url_bar = QLineEdit()

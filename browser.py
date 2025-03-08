@@ -175,17 +175,17 @@ class Browser(QMainWindow):
         super().__init__()
         try:
             try:
-                self.new_tab_shortcut = QShortcut(QKeySequence(self.shortcuts.get("new_tab", "Ctrl+T")), self)
+                self.new_tab_shortcut = QShortcut(QKeySequence(shortcuts.get("new_tab", "Ctrl+T")), self)
                 self.new_tab_shortcut.activated.connect(self.new_tab)
             except Exception as e_new_tab_shortcut:
                 logging.exception(f"Error while calling new tab shortcut: {e_new_tab_shortcut}")
             try:
-                self.close_tab_shortcut = QShortcut(QKeySequence(self.shortcuts.get("close_tab", "Ctrl+W")), self)
+                self.close_tab_shortcut = QShortcut(QKeySequence(shortcuts.get("close_tab", "Ctrl+W")), self)
                 self.close_tab_shortcut.activated.connect(self.close_current_tab_index)
             except Exception as e_close_tab_shortcut:
                 logging.exception(f"Error while calling close tab shortcut: {e_close_tab_shortcut}")
             try:
-                self.close_browser_shortcut = QShortcut(QKeySequence(self.shortcuts.get("close_browser", "Ctrl+Shift+W")), self)
+                self.close_browser_shortcut = QShortcut(QKeySequence(shortcuts.get("close_browser", "Ctrl+Shift+W")), self)
                 self.close_browser_shortcut.activated.connect(self.close_browser)
             except Exception as e_close_browser_shortcut:
                 logging.exception(f"Error while calling close browser shortcut: {e_close_browser_shortcut}")

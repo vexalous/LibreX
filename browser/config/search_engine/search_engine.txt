@@ -1,1 +1,2 @@
-
+default_search_engine=https://duckduckgo.com
+default_search_engine_search_path=/?q=

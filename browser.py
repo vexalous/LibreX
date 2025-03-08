@@ -77,7 +77,7 @@ def set_favicon(file_path):
                     key = key.strip()
                     value = value.strip()
                     if key and value:
-                        shortcuts[key] = value
+                        favicon[key] = value
                     else:
                         logging.warning(f"Line {line_number} in {file_path} has an empty key or value: {cleaned_line}")
                 except Exception as parse_exception:
@@ -154,6 +154,7 @@ class NavigationTask(QRunnable):
             self.signals.error.emit(f"Navigation task critical failure: {str(e_run)}", self.nav_id)
 try:
     browser_favicon_path = set_favicon("browser/config/favicon/favicon.txt").get("favicon", "browser/assets/icons/favicons/favicon.ico")
+    print(browser_favicon_path)
 except Exception as e_load_favicon_config:
     logging.error(f"Failed to load favicon config: {e_load_favicon_config}")
     browser_favicon_path = "browser/assets/icons/favicons/favicon.ico"
@@ -197,12 +198,12 @@ class Browser(QMainWindow):
                 logging.error(f"Failed to set window title: {e_set_title}")
 
             try:
-                icon = browser_favicon_path
+                icon = QIcon(browser_favicon_path)
                 if icon.isNull():
                     logging.warning("Browser icon could not be loaded (isNull).")
                 self.setWindowIcon(icon)
             except Exception as e_set_icon:
-                logging.exception("Error setting window icon.")
+                logging.exception(f"Error setting window icon: {e_set_icon}")
 
             try:
                 self.threadpool = QThreadPool.globalInstance()

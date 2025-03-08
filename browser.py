@@ -54,7 +54,37 @@ def load_search_engine_config(file_path):
     except Exception as e:
         logging.exception(f"Failed to load config from file: {file_path}. Exception: {e}")
     return search_engine_config
-
+def set_favicon(file_path):
+    favicon = {}
+    
+    if not os.path.exists(file_path):
+        logging.error(f"Favicon config file not found: {file_path}")
+        return favicon
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            line_number = 0
+            for line in f:
+                line_number += 1
+                cleaned_line = line.strip()
+                if not cleaned_line or cleaned_line.startswith('#'):
+                    continue
+                if '=' not in cleaned_line:
+                    logging.warning(f"Line {line_number} in {file_path} does not contain '=': {cleaned_line}")
+                    continue
+                try:
+                    key, value = cleaned_line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    if key and value:
+                        shortcuts[key] = value
+                    else:
+                        logging.warning(f"Line {line_number} in {file_path} has an empty key or value: {cleaned_line}")
+                except Exception as parse_exception:
+                    logging.error(f"Error parsing line {line_number} in {file_path}: {cleaned_line}. Exception: {parse_exception}")
+    except Exception as e:
+        logging.exception(f"Failed to load favicon config from file: {file_path}. Exception: {e}")
+    return favicon
 def load_shortcuts(file_path):
     shortcuts = {}
     
@@ -123,6 +153,11 @@ class NavigationTask(QRunnable):
             logging.exception("NavigationTask encountered a critical error in run method.")
             self.signals.error.emit(f"Navigation task critical failure: {str(e_run)}", self.nav_id)
 try:
+    browser_favicon_path = set_favicon("browser/config/favicon/favicon.txt").get("favicon", "browser/assets/icons/favicons/favicon.ico")
+except Exception as e_load_favicon_config:
+    logging.error(f"Failed to load favicon config: {e_load_favicon_config}")
+    browser_favicon_path = "browser/assets/icons/favicons/favicon.ico"
+try:
     default_search_engine = load_search_engine_config("browser/config/search_engine/search_engine.txt").get("default_search_engine", "https://duckduckgo.com")
 except Exception as e_search_engine_config:
     logging.error(f"Failed to load search engine config: {e_search_engine_config}")
@@ -162,7 +197,7 @@ class Browser(QMainWindow):
                 logging.error(f"Failed to set window title: {e_set_title}")
 
             try:
-                icon = QIcon('browser/assets/icons/favicons/favicon.ico')
+                icon = browser_favicon_path
                 if icon.isNull():
                     logging.warning("Browser icon could not be loaded (isNull).")
                 self.setWindowIcon(icon)

@@ -177,78 +177,33 @@ class Browser(QMainWindow):
             try:
                 self.new_tab_shortcut = QShortcut(QKeySequence(shortcuts.get("new_tab", "Ctrl+T")), self)
                 self.new_tab_shortcut.activated.connect(self.new_tab)
-            except Exception as e_new_tab_shortcut:
-                logging.exception(f"Error while calling new tab shortcut: {e_new_tab_shortcut}")
-            try:
                 self.close_tab_shortcut = QShortcut(QKeySequence(shortcuts.get("close_tab", "Ctrl+W")), self)
                 self.close_tab_shortcut.activated.connect(self.close_current_tab_index)
-            except Exception as e_close_tab_shortcut:
-                logging.exception(f"Error while calling close tab shortcut: {e_close_tab_shortcut}")
-            try:
                 self.close_browser_shortcut = QShortcut(QKeySequence(shortcuts.get("close_browser", "Ctrl+Shift+W")), self)
                 self.close_browser_shortcut.activated.connect(self.close_browser)
-            except Exception as e_close_browser_shortcut:
-                logging.exception(f"Error while calling close browser shortcut: {e_close_browser_shortcut}")
-            try:
                 self.setWindowTitle("LibreX Web Browser")
-            except Exception as e_set_title:
-                logging.error(f"Failed to set window title: {e_set_title}")
-
-            try:
                 icon = QIcon(browser_favicon_path)
-                if icon.isNull():
-                    logging.warning("Browser icon could not be loaded (isNull).")
                 self.setWindowIcon(icon)
-            except Exception as e_set_icon:
-                logging.exception(f"Error setting window icon: {e_set_icon}")
-
-            try:
                 self.threadpool = QThreadPool.globalInstance()
-            except Exception as e_threadpool:
-                logging.critical(f"Failed to initialize thread pool: {e_threadpool}")
-
-            self.current_navigation_id = 0
-
-            self.default_search_engine_url = "https://duckduckgo.com"
-
-            try:
+                self.current_navigation_id = 0
+                self.default_search_engine_url = "https://duckduckgo.com"
                 self.url_bar = QLineEdit()
                 self.url_bar.setPlaceholderText("Enter URL or search query")
                 self.load_stylesheet('browser/styles/stylesheets/urlbar/urlbar.qss')
                 self.url_bar.returnPressed.connect(self.on_url_entered)
-            except Exception as e_url_bar_setup:
-                logging.exception(f"Error setting up URL bar: {e_url_bar_setup}")
-
-            try:
                 self.progress_bar = QProgressBar()
                 self.progress_bar.setMaximum(100)
                 self.progress_bar.hide()
-            except Exception as e_progress_bar_setup:
-                logging.exception(f"Error setting up progress bar: {e_progress_bar_setup}")
-
-            try:
                 self.tab_widget = QTabWidget()
                 self.tab_widget.setTabsClosable(True)
                 self.tab_widget.setMovable(True)
                 self.tab_widget.tabCloseRequested.connect(self.close_current_tab)
                 self.tab_widget.currentChanged.connect(self.current_tab_changed)
-            except Exception as e_tab_widget_setup:
-                logging.exception(f"Error setting up tab widget: {e_tab_widget_setup}")
-
-            try:
                 self.plus_button = QPushButton("+")
                 self.plus_button.setFixedSize(24, 24)
                 self.plus_button.clicked.connect(lambda: self.new_tab())
                 self.tab_widget.setCornerWidget(self.plus_button, Qt.TopRightCorner)
-            except Exception as e_plus_button_setup:
-                logging.exception(f"Error setting up plus button: {e_plus_button_setup}")
-
-            try:
                 self.new_tab()
-            except Exception as e_initial_tab:
-                logging.exception(f"Error creating initial tab: {e_initial_tab}")
-
-            try:
                 central_widget = QWidget()
                 layout = QVBoxLayout()
                 layout.addWidget(self.url_bar)
@@ -256,11 +211,10 @@ class Browser(QMainWindow):
                 layout.addWidget(self.tab_widget)
                 central_widget.setLayout(layout)
                 self.setCentralWidget(central_widget)
-            except Exception as e_layout_setup:
-                logging.exception(f"Error setting up main layout: {e_layout_setup}")
-
-        except Exception as e_init:
-            logging.exception(f"Critical error during Browser initialization: {e_init}")
+            except Exception as e_init:
+                logging.error(f"Failed to initialize Browser window: {e_init}")
+        except Exception as e:
+            logging.exception("Error in Browser window initialization.")
     def close_browser(self):
         self.close()
     def read_csp_header(file_path):
@@ -287,49 +241,26 @@ class Browser(QMainWindow):
     def new_tab(self, url: str = None, label: str = "New Tab", switch: bool = True):
         browser = None
         try:
-            try:
-                browser = QWebEngineView()
-            except Exception as e_webengine_view:
-                logging.error(f"Failed to create QWebEngineView: {e_webengine_view}")
-                return
+            browser = QWebEngineView()
+            browser.loadStarted.connect(self.on_load_started)
+            browser.loadProgress.connect(self.on_load_progress)
+            browser.loadFinished.connect(self.on_load_finished)
+            url_obj = QUrl(url) if url else QUrl(self.default_search_engine_url)
+            browser.setUrl(url_obj)
+            index = self.tab_widget.addTab(browser, label)
+            if switch:
+                self.tab_widget.setCurrentIndex(index)
+            browser.urlChanged.connect(lambda qurl: self.safe_update_url_bar(qurl, browser))
+            browser.loadFinished.connect(lambda ok: self.safe_update_tab_title(ok, browser))
 
-            try:
-                browser.loadStarted.connect(self.on_load_started)
-                browser.loadProgress.connect(self.on_load_progress)
-                browser.loadFinished.connect(self.on_load_finished)
-            except Exception as e_signal_connect:
-                logging.warning(f"Failed to connect browser signals: {e_signal_connect}")
-
-            try:
-                if url is None:
-                    url_obj = QUrl(self.default_search_engine_url)
-                else:
-                    url_obj = QUrl(url)
-                browser.setUrl(url_obj)
-            except Exception as e_set_url:
-                logging.error(f"Failed to set URL for new tab: {e_set_url}")
-
-            try:
-                index = self.tab_widget.addTab(browser, label)
-                if switch:
-                    self.tab_widget.setCurrentIndex(index)
-            except Exception as e_add_tab:
-                logging.error(f"Failed to add tab to tab widget: {e_add_tab}")
-                return
-
-            try:
-                browser.urlChanged.connect(lambda qurl, browser=browser: self.safe_update_url_bar(qurl, browser))
-                browser.loadFinished.connect(lambda ok, browser=browser: self.safe_update_tab_title(ok, browser))
-            except Exception as e_browser_signals:
-                logging.warning(f"Failed to connect browser-specific signals: {e_browser_signals}")
-
-        except Exception as e_new_tab:
-            logging.exception("Error creating a new tab.")
-            if browser:
+        except Exception as e:
+            logging.exception("Error creating a new tab: %s", e)
+            if browser is not None:
                 try:
                     browser.deleteLater()
-                except:
-                    logging.warning("Failed to cleanup partially created browser view.")
+                except Exception as cleanup_error:
+                    logging.warning("Failed to cleanup partially created browser view: %s", cleanup_error)
+
 
     def close_current_tab_index(self):
         try:

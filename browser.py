@@ -7,7 +7,7 @@ import os
 from PySide6.QtCore import QUrl, Qt, QObject, Signal, QRunnable, QThreadPool, QTimer
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget,
-    QLineEdit, QTabWidget, QPushButton, QProgressBar
+    QLineEdit, QTabWidget, QPushButton, QProgressBar, QHBoxLayout
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtGui import QIcon, QKeySequence, QShortcut
@@ -21,101 +21,43 @@ logging.basicConfig(
 def global_exception_hook(exctype, value, tb):
     logging.exception("Unhandled exception", exc_info=(exctype, value, tb))
     sys.__excepthook__(exctype, value, tb)
+
 sys.excepthook = global_exception_hook
 
-def load_search_engine_config(file_path):
-    search_engine_config = {}
-    
+def parse_config(file_path: str, label: str) -> dict:
+    config = {}
     if not os.path.exists(file_path):
-        logging.error(f"Search engine config file not found: {file_path}")
-        return search_engine_config
-    
+        logging.error(f"{label} file not found: {file_path}")
+        return config
+
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            line_number = 0
-            for line in f:
-                line_number += 1
-                cleaned_line = line.strip()
-                if not cleaned_line or cleaned_line.startswith('#'):
+            for line_no, line in enumerate(f, start=1):
+                line = line.strip()
+                if not line or line[0] == '#':
                     continue
-                if '=' not in cleaned_line:
-                    logging.warning(f"Line {line_number} in {file_path} does not contain '=': {cleaned_line}")
+                eq_pos = line.find('=')
+                if eq_pos == -1:
+                    logging.warning(f"Line {line_no} in {file_path} does not contain '=': {line}")
                     continue
-                try:
-                    key, value = cleaned_line.split('=', 1)
-                    key = key.strip()
-                    value = value.strip()
-                    if key and value:
-                        search_engine_config[key] = value
-                    else:
-                        logging.warning(f"Line {line_number} in {file_path} has an empty key or value: {cleaned_line}")
-                except Exception as parse_exception:
-                    logging.error(f"Error parsing line {line_number} in {file_path}: {cleaned_line}. Exception: {parse_exception}")
+
+                key = line[:eq_pos].strip()
+                value = line[eq_pos + 1:].strip()
+                if key and value:
+                    config[key] = value
+                else:
+                    logging.warning(f"Line {line_no} in {file_path} has an empty key or value: {line}")
     except Exception as e:
-        logging.exception(f"Failed to load config from file: {file_path}. Exception: {e}")
-    return search_engine_config
-def set_favicon(file_path):
-    favicon = {}
-    
-    if not os.path.exists(file_path):
-        logging.error(f"Favicon config file not found: {file_path}")
-        return favicon
-    
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            line_number = 0
-            for line in f:
-                line_number += 1
-                cleaned_line = line.strip()
-                if not cleaned_line or cleaned_line.startswith('#'):
-                    continue
-                if '=' not in cleaned_line:
-                    logging.warning(f"Line {line_number} in {file_path} does not contain '=': {cleaned_line}")
-                    continue
-                try:
-                    key, value = cleaned_line.split('=', 1)
-                    key = key.strip()
-                    value = value.strip()
-                    if key and value:
-                        favicon[key] = value
-                    else:
-                        logging.warning(f"Line {line_number} in {file_path} has an empty key or value: {cleaned_line}")
-                except Exception as parse_exception:
-                    logging.error(f"Error parsing line {line_number} in {file_path}: {cleaned_line}. Exception: {parse_exception}")
-    except Exception as e:
-        logging.exception(f"Failed to load favicon config from file: {file_path}. Exception: {e}")
-    return favicon
-def load_shortcuts(file_path):
-    shortcuts = {}
-    
-    if not os.path.exists(file_path):
-        logging.error(f"Shortcuts file not found: {file_path}")
-        return shortcuts
-    
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            line_number = 0
-            for line in f:
-                line_number += 1
-                cleaned_line = line.strip()
-                if not cleaned_line or cleaned_line.startswith('#'):
-                    continue
-                if '=' not in cleaned_line:
-                    logging.warning(f"Line {line_number} in {file_path} does not contain '=': {cleaned_line}")
-                    continue
-                try:
-                    key, value = cleaned_line.split('=', 1)
-                    key = key.strip()
-                    value = value.strip()
-                    if key and value:
-                        shortcuts[key] = value
-                    else:
-                        logging.warning(f"Line {line_number} in {file_path} has an empty key or value: {cleaned_line}")
-                except Exception as parse_exception:
-                    logging.error(f"Error parsing line {line_number} in {file_path}: {cleaned_line}. Exception: {parse_exception}")
-    except Exception as e:
-        logging.exception(f"Failed to load shortcuts from file: {file_path}. Exception: {e}")
-    return shortcuts
+        logging.exception(f"Failed to load {label} from file: {file_path}. Exception: {e}")
+    return config
+def load_search_engine_config(file_path: str) -> dict:
+    return parse_config(file_path, "Search engine config")
+
+def set_favicon(file_path: str) -> dict:
+    return parse_config(file_path, "Favicon config")
+
+def load_shortcuts(file_path: str) -> dict:
+    return parse_config(file_path, "Shortcuts file")
 
 class WorkerSignals(QObject):
     result = Signal(QUrl, int)
@@ -139,7 +81,7 @@ class NavigationTask(QRunnable):
 
             if not url.isValid() or url.scheme() == "":
                 try:
-                    url = QUrl(default_search_engine + default_search_engine_search_path + self.url_str)
+                    url = QUrl(''.join([default_search_engine, default_search_engine_search_path, self.url_str]))
                 except Exception as e_search_url_creation:
                     logging.error(f"Failed to create search URL: {e_search_url_creation}")
                     self.signals.error.emit(f"Search URL creation error: {e_search_url_creation}", self.nav_id)
@@ -175,80 +117,48 @@ class Browser(QMainWindow):
         super().__init__()
         try:
             try:
-                self.new_tab_shortcut = QShortcut(QKeySequence(self.shortcuts.get("new_tab", "Ctrl+T")), self)
+                self.new_tab_shortcut = QShortcut(QKeySequence(shortcuts.get("new_tab", "Ctrl+T")), self)
                 self.new_tab_shortcut.activated.connect(self.new_tab)
-            except Exception as e_new_tab_shortcut:
-                logging.exception(f"Error while calling new tab shortcut: {e_new_tab_shortcut}")
-            try:
-                self.close_tab_shortcut = QShortcut(QKeySequence(self.shortcuts.get("close_tab", "Ctrl+W")), self)
+                self.close_tab_shortcut = QShortcut(QKeySequence(shortcuts.get("close_tab", "Ctrl+W")), self)
                 self.close_tab_shortcut.activated.connect(self.close_current_tab_index)
-            except Exception as e_close_tab_shortcut:
-                logging.exception(f"Error while calling close tab shortcut: {e_close_tab_shortcut}")
-            try:
-                self.close_browser_shortcut = QShortcut(QKeySequence(self.shortcuts.get("close_browser", "Ctrl+Shift+W")), self)
+                self.close_browser_shortcut = QShortcut(QKeySequence(shortcuts.get("close_browser", "Ctrl+Shift+W")), self)
                 self.close_browser_shortcut.activated.connect(self.close_browser)
-            except Exception as e_close_browser_shortcut:
-                logging.exception(f"Error while calling close browser shortcut: {e_close_browser_shortcut}")
-            try:
                 self.setWindowTitle("LibreX Web Browser")
-            except Exception as e_set_title:
-                logging.error(f"Failed to set window title: {e_set_title}")
-
-            try:
                 icon = QIcon(browser_favicon_path)
-                if icon.isNull():
-                    logging.warning("Browser icon could not be loaded (isNull).")
                 self.setWindowIcon(icon)
-            except Exception as e_set_icon:
-                logging.exception(f"Error setting window icon: {e_set_icon}")
-
-            try:
                 self.threadpool = QThreadPool.globalInstance()
-            except Exception as e_threadpool:
-                logging.critical(f"Failed to initialize thread pool: {e_threadpool}")
-
-            self.current_navigation_id = 0
-
-            self.default_search_engine_url = "https://duckduckgo.com"
-
-            try:
+                self.current_navigation_id = 0
+                self.default_search_engine_url = "https://duckduckgo.com"
                 self.url_bar = QLineEdit()
                 self.url_bar.setPlaceholderText("Enter URL or search query")
-                self.load_stylesheet('browser/styles/stylesheets/urlbar/urlbar.qss')
+                self.load_stylesheet('browser/styles/stylesheets/qss/styles.qss')
                 self.url_bar.returnPressed.connect(self.on_url_entered)
-            except Exception as e_url_bar_setup:
-                logging.exception(f"Error setting up URL bar: {e_url_bar_setup}")
-
-            try:
                 self.progress_bar = QProgressBar()
                 self.progress_bar.setMaximum(100)
                 self.progress_bar.hide()
-            except Exception as e_progress_bar_setup:
-                logging.exception(f"Error setting up progress bar: {e_progress_bar_setup}")
-
-            try:
                 self.tab_widget = QTabWidget()
                 self.tab_widget.setTabsClosable(True)
                 self.tab_widget.setMovable(True)
                 self.tab_widget.tabCloseRequested.connect(self.close_current_tab)
                 self.tab_widget.currentChanged.connect(self.current_tab_changed)
-            except Exception as e_tab_widget_setup:
-                logging.exception(f"Error setting up tab widget: {e_tab_widget_setup}")
-
-            try:
                 self.plus_button = QPushButton("+")
-                self.plus_button.setFixedSize(24, 24)
+                screen_geometry = app.primaryScreen().geometry()
+                screen_width = screen_geometry.width()
+                screen_height = screen_geometry.height()
+                plus_button_scrn_min_width = screen_width * 0.0175
+                plus_button_scrn_min_height = screen_height * 0.0175
+                plus_button_scrn_max_width = screen_width * 0.025
+                plus_button_scrn_max_height = screen_height * 0.025
+                self.plus_button.setMinimumSize(plus_button_scrn_min_width, plus_button_scrn_min_height)
+                self.plus_button.setMaximumSize(plus_button_scrn_max_width, plus_button_scrn_max_height)
+                window = QWidget()
+                layout = QHBoxLayout()
+                # layout.setAlignment(self.url_bar, Qt.AlignLeft)
+                # layout.setAlignment(self.plus_button, Qt.AlignRight)
+                layout.setSpacing(10)
                 self.plus_button.clicked.connect(lambda: self.new_tab())
                 self.tab_widget.setCornerWidget(self.plus_button, Qt.TopRightCorner)
-            except Exception as e_plus_button_setup:
-                logging.exception(f"Error setting up plus button: {e_plus_button_setup}")
-
-            try:
                 self.new_tab()
-            except Exception as e_initial_tab:
-                logging.exception(f"Error creating initial tab: {e_initial_tab}")
-
-            try:
                 central_widget = QWidget()
                 layout = QVBoxLayout()
                 layout.addWidget(self.url_bar)
@@ -256,11 +166,10 @@ class Browser(QMainWindow):
                 layout.addWidget(self.tab_widget)
                 central_widget.setLayout(layout)
                 self.setCentralWidget(central_widget)
-            except Exception as e_layout_setup:
-                logging.exception(f"Error setting up main layout: {e_layout_setup}")
-
-        except Exception as e_init:
-            logging.exception(f"Critical error during Browser initialization: {e_init}")
+            except Exception as e_init:
+                logging.error(f"Failed to initialize Browser window: {e_init}")
+        except Exception as e:
+            logging.exception("Error in Browser window initialization.")
     def close_browser(self):
         self.close()
     def read_csp_header(file_path):
@@ -287,49 +196,26 @@ class Browser(QMainWindow):
     def new_tab(self, url: str = None, label: str = "New Tab", switch: bool = True):
         browser = None
         try:
-            try:
-                browser = QWebEngineView()
-            except Exception as e_webengine_view:
-                logging.error(f"Failed to create QWebEngineView: {e_webengine_view}")
-                return
+            browser = QWebEngineView()
+            browser.loadStarted.connect(self.on_load_started)
+            browser.loadProgress.connect(self.on_load_progress)
+            browser.loadFinished.connect(self.on_load_finished)
+            url_obj = QUrl(url) if url else QUrl(self.default_search_engine_url)
+            browser.setUrl(url_obj)
+            index = self.tab_widget.addTab(browser, label)
+            if switch:
+                self.tab_widget.setCurrentIndex(index)
+            browser.urlChanged.connect(lambda qurl: self.safe_update_url_bar(qurl, browser))
+            browser.loadFinished.connect(lambda ok: self.safe_update_tab_title(ok, browser))
 
-            try:
-                browser.loadStarted.connect(self.on_load_started)
-                browser.loadProgress.connect(self.on_load_progress)
-                browser.loadFinished.connect(self.on_load_finished)
-            except Exception as e_signal_connect:
-                logging.warning(f"Failed to connect browser signals: {e_signal_connect}")
-
-            try:
-                if url is None:
-                    url_obj = QUrl(self.default_search_engine_url)
-                else:
-                    url_obj = QUrl(url)
-                browser.setUrl(url_obj)
-            except Exception as e_set_url:
-                logging.error(f"Failed to set URL for new tab: {e_set_url}")
-
-            try:
-                index = self.tab_widget.addTab(browser, label)
-                if switch:
-                    self.tab_widget.setCurrentIndex(index)
-            except Exception as e_add_tab:
-                logging.error(f"Failed to add tab to tab widget: {e_add_tab}")
-                return
-
-            try:
-                browser.urlChanged.connect(lambda qurl, browser=browser: self.safe_update_url_bar(qurl, browser))
-                browser.loadFinished.connect(lambda ok, browser=browser: self.safe_update_tab_title(ok, browser))
-            except Exception as e_browser_signals:
-                logging.warning(f"Failed to connect browser-specific signals: {e_browser_signals}")
-
-        except Exception as e_new_tab:
-            logging.exception("Error creating a new tab.")
-            if browser:
+        except Exception as e:
+            logging.exception("Error creating a new tab: %s", e)
+            if browser is not None:
                 try:
                     browser.deleteLater()
-                except:
-                    logging.warning("Failed to cleanup partially created browser view.")
+                except Exception as cleanup_error:
+                    logging.warning("Failed to cleanup partially created browser view: %s", cleanup_error)
+
 
     def close_current_tab_index(self):
         try:
@@ -396,12 +282,14 @@ class Browser(QMainWindow):
             if not user_input:
                 return
 
-            self.current_navigation_id += 1
-            current_id = self.current_navigation_id
+            current_id = self.current_navigation_id + 1
+            self.current_navigation_id = current_id
 
-            if not user_input.lower().startswith("http://") and not user_input.lower().startswith("https://"):
-                if '.' in user_input:
-                    user_input = "https://" + user_input
+
+            user_input_lower = user_input.lower()
+            if not user_input_lower.startswith(("http://", "https://")) and '.' in user_input:
+                user_input = ''.join(['https://', user_input])
+
 
             try:
                 task = NavigationTask(user_input, current_id)
@@ -460,7 +348,7 @@ class Browser(QMainWindow):
 
     def truncate_title(self, title, max_length=15):
         try:
-            return title if len(title) <= max_length else title[:max_length] + '...'
+            return title if len(title) <= max_length else ''.join([title[:max_length], '...'])
         except Exception as e_truncate_title:
             logging.exception("Error truncating title.")
             return title

@@ -8,7 +8,7 @@ Clone the repository.
 
 ```bash
 git clone https://github.com/vexalous/LibreX
-cd LibreX-main
+cd LibreX
 ```
 
 ## Install Dependencies

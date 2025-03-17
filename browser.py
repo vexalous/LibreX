@@ -386,6 +386,11 @@ class Browser(QMainWindow):
             logging.exception("Error updating tab title: %s", e_update_tab_title)
 
     def on_load_started(self):
+        """
+        Shows the progress bar upon a new tab loading.
+        
+        This is triggered inside the new_tab() function after the browser declaration.
+        """
        if self.sender() == self.tab_widget.currentWidget():
             try:
                 self.progress_bar.show()

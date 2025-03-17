@@ -44,7 +44,7 @@ def parse_config(file_path: str, label: str) -> dict:
                     config[key] = value
                 else:
                     logging.warning(
-                    f"Line {line_no} in {file_path} has an empty key or value: {line}"
+                    "Line %s in %s has an empty key or value: %s", line_no, file_path, line
 )
     except Exception as e:
         logging.exception(f"Failed to load {label} from file: {file_path}. Exception: {e}")

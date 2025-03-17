@@ -368,15 +368,15 @@ class Browser(QMainWindow):
             if index != -1:
                     title = browser.page().title()
 
-                if title:
-                    try:
-                        truncated_title = self.truncate_title(title)
-                        self.tab_widget.setTabText(index, truncated_title)
-                        self.tab_widget.setTabText(index, browser.url().toString())
-                    except Exception as e_set_truncated_tab_title:
-                            logging.warning(
-                                "Failed to change tab title: %s", e_set_truncated_tab_title
-                            )
+            if title:
+                try:
+                    truncated_title = self.truncate_title(title)
+                    self.tab_widget.setTabText(index, truncated_title)
+                    self.tab_widget.setTabText(index, browser.url().toString())
+                except Exception as e_set_truncated_tab_title:
+                        logging.warning(
+                            "Failed to change tab title: %s", e_set_truncated_tab_title
+                        )
                 else:
                     try:
                         self.tab_widget.setTabText(index, browser.url().toString())

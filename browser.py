@@ -419,7 +419,7 @@ class Browser(QMainWindow):
         except Exception as e_load_progress:
             logging.exception("Error in on_load_progress.")
 
-    def on_load_finished(self, ok: bool):
+    def on_load_finished(self):
         try:
             try:
                 if self.sender() == self.tab_widget.currentWidget():

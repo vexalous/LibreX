@@ -364,116 +364,61 @@ class Browser(QMainWindow):
 
     def update_tab_title(self, browser: QWebEngineView):
         try:
-            try:
-                index = self.tab_widget.indexOf(browser)
-            except Exception as e_get_tab_index:
-                logging.warning(f"Failed to get tab index for browser: {e_get_tab_index}")
-                return
-
+            index = self.tab_widget.indexOf(browser)
             if index != -1:
-                try:
                     title = browser.page().title()
-                except Exception as e_get_page_title:
-                    logging.warning(f"Failed to get page title from browser: {e_get_page_title}")
-                    title = None
 
                 if title:
                     try:
                         truncated_title = self.truncate_title(title)
                         self.tab_widget.setTabText(index, truncated_title)
-                    except Exception as e_set_tab_text_truncated:
-                        logging.warning(f"Failed to set tab text with truncated title: {e_set_tab_text_truncated}")
-                        try:
-                            self.tab_widget.setTabText(index, browser.url().toString())
-                        except:
-                            logging.warning("Failed to set tab text even with URL as fallback after truncation error.")
+                        self.tab_widget.setTabText(index, browser.url().toString())
+                    except Exception as e_set_truncated_tab_title:
+                            logging.warning(
+                                "Failed to change tab title: %s", e_set_truncated_tab_title
+                            )
                 else:
                     try:
                         self.tab_widget.setTabText(index, browser.url().toString())
                     except Exception as e_set_tab_text_url:
-                        logging.warning(f"Failed to set tab text with URL: {e_set_tab_text_url}")
+                        logging.warning("Failed to set tab text with URL: %s", e_set_tab_text_url)
         except Exception as e_update_tab_title:
-            logging.exception("Error updating tab title.")
+            logging.exception("Error updating tab title: %s", e_update_tab_title)
 
     def on_load_started(self):
-        try:
+       if self.sender() == self.tab_widget.currentWidget():
             try:
-                if self.sender() == self.tab_widget.currentWidget():
-                    try:
-                        self.progress_bar.show()
-                    except Exception as e_show_progress_bar:
-                        logging.warning(f"Failed to show progress bar on load start: {e_show_progress_bar}")
-                    try:
-                        self.progress_bar.setValue(0)
-                    except Exception as e_set_progress_value_start:
-                        logging.warning(f"Failed to set progress bar value to 0 on load start: {e_set_progress_value_start}")
-            except Exception as e_get_current_widget:
-                logging.warning(f"Failed to get current tab widget in on_load_started: {e_get_current_widget}")
-        except Exception as e_load_started:
-            logging.exception("Error in on_load_started.")
+                self.progress_bar.show()
+            except Exception as e_show_progress_bar:
+                logging.warning("Failed to show progress bar on load start: %s", e_show_progress_bar)
 
     def on_load_progress(self, progress: int):
-        try:
+        if self.sender() == self.tab_widget.currentWidget():
             try:
-                if self.sender() == self.tab_widget.currentWidget():
-                    try:
-                        self.progress_bar.setValue(progress)
-                    except Exception as e_set_progress_value:
-                        logging.warning(
-                        "Failed to set progress bar value to %s: %s", progress, e_set_progress_value
-                        )
-            except Exception as e_get_current_widget:
+                self.progress_bar.setValue(progress)
+            except Exception as e_set_progress_value:
                 logging.warning(
-                "Failed to get current tab widget in on_load_progress: %s", e_get_current_widget
+                "Failed to set progress bar value to %s: %s", progress, e_set_progress_value
                 )
-        except Exception as e_load_progress:
-            logging.exception("Error in on_load_progress.")
-
     def on_load_finished(self):
         try:
             try:
                 if self.sender() == self.tab_widget.currentWidget():
                     try:
                         self.progress_bar.setValue(100)
-                    except Exception as e_set_progress_value_finish:
-                        logging.warning(
-                            "Failed to set progress bar value to 100 on load finish: %s", e_set_progress_value_finish
-                        )
-                    try:
                         QTimer.singleShot(500, self.progress_bar.hide)
-                    except Exception as e_timer_hide_progress:
-                        logging.warning(f"Failed to start timer to hide progress bar: {e_timer_hide_progress}")
             except Exception as e_get_current_widget:
-                logging.warning(f"Failed to get current tab widget in on_load_finished: {e_get_current_widget}")
+                logging.warning(
+                    "Failed to get current tab widget in on_load_finished: %s", e_get_current_widget
+                )
 
         except Exception as e_load_finished:
-            logging.exception("Error in on_load_finished.")
+            logging.exception("Error in on_load_finished: %s", e_load_finished)
 
 if __name__ == "__main__":
     try:
         try:
             app = QApplication(sys.argv)
-        except Exception as e_app_init:
-            logging.critical(f"Failed to initialize QApplication: {e_app_init}")
-            sys.exit(1)
-
-        try:
             window = Browser()
-        except Exception as e_browser_init:
-            logging.critical(f"Failed to initialize Browser window: {e_browser_init}")
-            sys.exit(1)
-
-        try:
             window.showMaximized()
-        except Exception as e_show_maximized:
-            logging.warning(f"Failed to maximize window: {e_show_maximized}")
-
-        try:
             sys.exit(app.exec())
-        except Exception as e_app_exec:
-            logging.critical(f"Application execution failed: {e_app_exec}")
-            sys.exit(1)
-
-    except Exception as e_main:
-        logging.exception("Fatal error during application execution in main block.")
-        sys.exit(1)

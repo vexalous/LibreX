@@ -409,9 +409,13 @@ class Browser(QMainWindow):
                     try:
                         self.progress_bar.setValue(progress)
                     except Exception as e_set_progress_value:
-                        logging.warning(f"Failed to set progress bar value to {progress}: {e_set_progress_value}")
+                        logging.warning(
+                        "Failed to set progress bar value to %s: %s", progress, e_set_progress_value
+                        )
             except Exception as e_get_current_widget:
-                logging.warning(f"Failed to get current tab widget in on_load_progress: {e_get_current_widget}")
+                logging.warning(
+                "Failed to get current tab widget in on_load_progress: %s", e_get_current_widget
+                )
         except Exception as e_load_progress:
             logging.exception("Error in on_load_progress.")
 
@@ -422,7 +426,9 @@ class Browser(QMainWindow):
                     try:
                         self.progress_bar.setValue(100)
                     except Exception as e_set_progress_value_finish:
-                        logging.warning(f"Failed to set progress bar value to 100 on load finish: {e_set_progress_value_finish}")
+                        logging.warning(
+                            "Failed to set progress bar value to 100 on load finish: %s", e_set_progress_value_finish
+                        )
                     try:
                         QTimer.singleShot(500, self.progress_bar.hide)
                     except Exception as e_timer_hide_progress:

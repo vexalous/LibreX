@@ -102,9 +102,15 @@ class NavigationTask(QRunnable):
             logging.exception("NavigationTask encountered a critical error in run method.")
             self.signals.error.emit(f"Navigation task critical failure: {str(e_run)}", self.nav_id)
 try:
-    browser_favicon_path = set_favicon("browser/config/favicon/favicon.txt").get("favicon", "browser/assets/icons/favicons/favicon.ico")
+    browser_favicon_path = set_favicon(
+        "browser/config/favicon/favicon.txt"
+    ).get(
+        "favicon", "browser/assets/icons/favicons/favicon.ico"
+    )
 except Exception as e_load_favicon_config:
-    logging.error(f"Failed to load favicon config: {e_load_favicon_config}")
+    logging.error(
+        "Failed to load favicon config: %s", e_load_favicon_config
+    )
     browser_favicon_path = "browser/assets/icons/favicons/favicon.ico"
 try:
     default_search_engine = load_search_engine_config("browser/config/search_engine/search_engine.txt").get("default_search_engine", "https://duckduckgo.com")

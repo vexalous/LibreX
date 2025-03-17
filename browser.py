@@ -390,7 +390,9 @@ class Browser(QMainWindow):
             try:
                 self.progress_bar.show()
             except Exception as e_show_progress_bar:
-                logging.warning("Failed to show progress bar on load start: %s", e_show_progress_bar)
+                logging.warning(
+                    "Failed to show progress bar on load start: %s", e_show_progress_bar
+                )
 
     def on_load_progress(self, progress: int):
         if self.sender() == self.tab_widget.currentWidget():

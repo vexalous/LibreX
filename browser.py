@@ -88,8 +88,12 @@ class NavigationTask(QRunnable):
                         ])
                     )
                 except Exception as e_search_url_creation:
-                    logging.error(f"Failed to create search URL: {e_search_url_creation}")
-                    self.signals.error.emit(f"Search URL creation error: {e_search_url_creation}", self.nav_id)
+                    logging.error(
+                        "Failed to create search URL: %s", e_search_url_creation
+                    )
+                    self.signals.error.emit(
+                        f"Search URL creation error: %s", e_search_url_creation, self.nav_id
+                    )
                     return
 
             self.signals.result.emit(url, self.nav_id)

@@ -169,7 +169,7 @@ class Browser(QMainWindow):
             logging.exception("Error in Browser window initialization.")
     def close_browser(self):
         self.close()
-    def read_csp_header(file_path):
+    def read_csp_header(self, file_path):
         try:
             with open(file_path, 'r') as file:
                 return file.read().strip()

@@ -404,15 +404,14 @@ class Browser(QMainWindow):
                 )
     def on_load_finished(self):
         try:
-            try:
-                if self.sender() == self.tab_widget.currentWidget():
-                    try:
-                        self.progress_bar.setValue(100)
-                        QTimer.singleShot(500, self.progress_bar.hide)
-            except Exception as e_get_current_widget:
-                logging.warning(
-                    "Failed to get current tab widget in on_load_finished: %s", e_get_current_widget
-                )
+            if self.sender() == self.tab_widget.currentWidget():
+                try:
+                    self.progress_bar.setValue(100)
+                    QTimer.singleShot(500, self.progress_bar.hide)
+                except Exception as e_update_progress_bar:
+                    logging.warning(
+                        "Error while updating progress bar: %s", e_update_progress_bar
+                    )
 
         except Exception as e_load_finished:
             logging.exception("Error in on_load_finished: %s", e_load_finished)

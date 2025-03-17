@@ -418,8 +418,12 @@ class Browser(QMainWindow):
 
 if __name__ == "__main__":
     try:
-        try:
-            app = QApplication(sys.argv)
-            window = Browser()
-            window.showMaximized()
-            sys.exit(app.exec())
+        app = QApplication(sys.argv)
+        window = Browser()
+        window.showMaximized()
+        sys.exit(app.exec())
+    except Exception as e_app_initialization
+        logging.critical(
+            "An error occured while initializing the application: %s", e_app_initialization
+        )
+        sys.exit(1)

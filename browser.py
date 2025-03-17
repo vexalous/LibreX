@@ -422,7 +422,7 @@ if __name__ == "__main__":
         window = Browser()
         window.showMaximized()
         sys.exit(app.exec())
-    except Exception as e_app_initialization
+    except Exception as e_app_initialization:
         logging.critical(
             "An error occured while initializing the application: %s", e_app_initialization
         )

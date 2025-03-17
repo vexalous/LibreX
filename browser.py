@@ -1,7 +1,5 @@
 import sys
-import time
 import logging
-import traceback
 import os
 from PySide6.QtCore import QUrl, Qt, QObject, Signal, QRunnable, QThreadPool, QTimer
 from PySide6.QtWidgets import (

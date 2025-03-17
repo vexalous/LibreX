@@ -92,7 +92,7 @@ class NavigationTask(QRunnable):
                         "Failed to create search URL: %s", e_search_url_creation
                     )
                     self.signals.error.emit(
-                        f"Search URL creation error: %s", e_search_url_creation, self.nav_id
+                        "Search URL creation error: %s", e_search_url_creation, self.nav_id
                     )
                     return
 

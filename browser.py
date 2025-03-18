@@ -64,7 +64,6 @@ class WorkerSignals(QObject):
 
     def reset(self):
         """
-        Dummy method to satisfy minimum public method count.
         Returns a tuple of signals.
         """
         return (self.result, self.error)

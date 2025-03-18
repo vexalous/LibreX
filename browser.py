@@ -21,43 +21,6 @@ def global_exception_hook(exctype, value, tb):
 
 sys.excepthook = global_exception_hook
 
-def parse_config(file_path: str, label: str) -> dict:
-    config = {}
-    if not os.path.exists(file_path):
-        logging.error(f"{label} file not found: {file_path}")
-        return config
-
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            for line_no, line in enumerate(f, start=1):
-                line = line.strip()
-                if not line or line[0] == '#':
-                    continue
-                eq_pos = line.find('=')
-                if eq_pos == -1:
-                    logging.warning(f"Line {line_no} in {file_path} does not contain '=': {line}")
-                    continue
-
-                key = line[:eq_pos].strip()
-                value = line[eq_pos + 1:].strip()
-                if key and value:
-                    config[key] = value
-                else:
-                    logging.warning(
-                    "Line %s in %s has an empty key or value: %s", line_no, file_path, line
-)
-    except Exception as e:
-        logging.exception(f"Failed to load {label} from file: {file_path}. Exception: {e}")
-    return config
-def load_search_engine_config(file_path: str) -> dict:
-    return parse_config(file_path, "Search engine config")
-
-def set_favicon(file_path: str) -> dict:
-    return parse_config(file_path, "Favicon config")
-
-def load_shortcuts(file_path: str) -> dict:
-    return parse_config(file_path, "Shortcuts file")
-
 class WorkerSignals(QObject):
     result = Signal(QUrl, int)
     error = Signal(str, int)
@@ -101,32 +64,8 @@ class NavigationTask(QRunnable):
         except Exception as e_run:
             logging.exception("NavigationTask encountered a critical error in run method.")
             self.signals.error.emit(f"Navigation task critical failure: {str(e_run)}", self.nav_id)
-try:
-    browser_favicon_path = set_favicon(
-        "browser/config/favicon/favicon.txt"
-    ).get(
-        "favicon", "browser/assets/icons/favicons/favicon.ico"
-    )
-except Exception as e_load_favicon_config:
-    logging.error(
-        "Failed to load favicon config: %s", e_load_favicon_config
-    )
-    browser_favicon_path = "browser/assets/icons/favicons/favicon.ico"
-try:
-    default_search_engine = load_search_engine_config("browser/config/search_engine/search_engine.txt").get("default_search_engine", "https://duckduckgo.com")
-except Exception as e_search_engine_config:
     logging.error(f"Failed to load search engine config: {e_search_engine_config}")
     default_search_engine = "https://duckduckgo.com"
-try:
-    default_search_engine_search_path = load_search_engine_config("browser/config/search_engine/search_engine.txt").get("default_search_engine_search_path", "/?q=")
-except Exception as e_search_engine_config:
-    logging.error(f"Failed to load search engine config: {e_search_engine_config}")
-    default_search_engine_search_path = "/?q="
-try:
-    shortcuts = load_shortcuts("browser/config/shortcuts/shortcuts.txt")
-except Exception as e_shortcuts:
-    logging.error(f"Failed to load shortcuts: {e_shortcuts}")
-    shortcuts = {}
 class Browser(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -139,7 +78,7 @@ class Browser(QMainWindow):
                 self.close_browser_shortcut = QShortcut(QKeySequence(shortcuts.get("close_browser", "Ctrl+Shift+W")), self)
                 self.close_browser_shortcut.activated.connect(self.close_browser)
                 self.setWindowTitle("LibreX Web Browser")
-                icon = QIcon(browser_favicon_path)
+                icon = QIcon(browser/assets/icons/favicons/favicon.ico)
                 self.setWindowIcon(icon)
                 self.threadpool = QThreadPool.globalInstance()
                 self.current_navigation_id = 0
@@ -168,8 +107,6 @@ class Browser(QMainWindow):
                 self.plus_button.setMaximumSize(plus_button_scrn_max_width, plus_button_scrn_max_height)
                 window = QWidget()
                 layout = QHBoxLayout()
-                # layout.setAlignment(self.url_bar, Qt.AlignLeft)
-                # layout.setAlignment(self.plus_button, Qt.AlignRight)
                 layout.setSpacing(10)
                 self.plus_button.clicked.connect(lambda: self.new_tab())
                 self.tab_widget.setCornerWidget(self.plus_button, Qt.TopRightCorner)

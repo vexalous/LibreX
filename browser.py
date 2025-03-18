@@ -203,7 +203,9 @@ class Browser(QMainWindow):
                 try:
                     browser.deleteLater()
                 except Exception as cleanup_error:
-                    logging.warning("Failed to cleanup partially created browser view: %s", cleanup_error)
+                    logging.warning(
+                        "Failed to cleanup partially created browser view: %s", cleanup_error
+                    )
 
 
     def close_current_tab_index(self):
@@ -230,42 +232,56 @@ class Browser(QMainWindow):
                 try:
                     self.tab_widget.removeTab(index)
                 except Exception as e_remove_tab:
-                    logging.error(f"Failed to remove tab at index {index}: {e_remove_tab}")
+                    logging.error(
+                        "Failed to remove tab at index %s: %s", index, e_remove_tab
+                    )
             else:
                 try:
                     self.close_browser()
                 except Exception as e_close_browser_no_tabs_left:
-                    logging.exception(f"Error occured while attempting to close browser, no tabs left: {e_close_browser_no_tabs_left}")
+                    logging.exception(
+                        "Error occured while attempting to close browser, no tabs left: %s", e_close_browser_no_tabs_left
+                    )
         except Exception as e_close_tab:
-            logging.exception("Error closing current tab.")
+            logging.exception(
+                "Error closing current tab."
+            )
 
     def current_tab_changed(self, index: int):
         try:
             try:
                 current_browser = self.tab_widget.widget(index)
             except Exception as e_get_widget:
-                logging.warning(f"Failed to get widget for tab index {index}: {e_get_widget}")
+                logging.warning("Failed to get widget for tab index %s: %s", index, e_get_widget)
                 return
 
             if current_browser:
                 try:
-                    self.url_bar.setText(current_browser.url().toString())
+                    self.url_bar.setText(
+                        current_browser.url().toString()
+                    )
                 except Exception as e_set_url_bar:
-                    logging.warning(f"Failed to set URL bar text on tab change: {e_set_url_bar}")
+                    logging.warning(
+                        "Failed to set URL bar text on tab change: %s", e_set_url_bar
+                    )
             else:
                 try:
                     self.url_bar.clear()
                 except Exception as e_clear_url_bar:
-                    logging.warning(f"Failed to clear URL bar on tab change (no browser): {e_clear_url_bar}")
+                    logging.warning(
+                        "Failed to clear URL bar on tab change (no browser): %s", e_clear_url_bar
+                    )
         except Exception as e_tab_changed:
-            logging.exception("Error handling tab change.")
+            logging.exception(
+                "Error handling tab change."
+            )
 
     def on_url_entered(self):
         try:
             try:
                 user_input = self.url_bar.text().strip()
             except Exception as e_get_url_text:
-                logging.warning(f"Failed to get text from URL bar: {e_get_url_text}")
+                logging.warning("Failed to get text from URL bar: %s", e_get_url_text)
                 return
 
             if not user_input:

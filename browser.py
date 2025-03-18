@@ -369,7 +369,7 @@ class Browser(QMainWindow):
         try:
             index = self.tab_widget.indexOf(browser)
             if index != -1:
-                    title = browser.page().title()
+                title = browser.page().title()
 
             if title:
                 try:
@@ -377,9 +377,9 @@ class Browser(QMainWindow):
                     self.tab_widget.setTabText(index, truncated_title)
                     self.tab_widget.setTabText(index, browser.url().toString())
                 except Exception as e_set_truncated_tab_title:
-                        logging.warning(
-                            "Failed to change tab title: %s", e_set_truncated_tab_title
-                        )
+                    logging.warning(
+                        "Failed to change tab title: %s", e_set_truncated_tab_title
+                    )
                 else:
                     try:
                         self.tab_widget.setTabText(index, browser.url().toString())
@@ -389,7 +389,7 @@ class Browser(QMainWindow):
             logging.exception("Error updating tab title: %s", e_update_tab_title)
 
     def on_load_started(self):
-       if self.sender() == self.tab_widget.currentWidget():
+        if self.sender() == self.tab_widget.currentWidget():
             try:
                 self.progress_bar.show()
             except Exception as e_show_progress_bar:

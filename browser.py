@@ -1,7 +1,3 @@
-"""
-LibreXWebBrowser implementation using PySide6.
-"""
-
 try:
     from PySide6.QtCore import (
         QUrl, Qt, QObject, Signal, QRunnable, QThreadPool, QTimer

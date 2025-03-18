@@ -20,14 +20,12 @@ except ImportError as e:
 import sys
 import logging
 
-# Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s [%(levelname)-8s] %(message)s",
     datefmt="%H:%M:%S"
 )
 
-# Global constants
 DEFAULT_SEARCH_ENGINE = "https://duckduckgo.com"
 DEFAULT_SEARCH_ENGINE_SEARCH_PATH = "/?q="
 
@@ -113,7 +111,7 @@ class Browser(QMainWindow):
         super().__init__()
         self.current_navigation_id = 0
         self.threadpool = QThreadPool.globalInstance()
-        self.shortcuts = []  # Will hold our QShortcut objects
+        self.shortcuts = []
         self.setup_shortcuts()
         self.setup_ui()
 
@@ -142,25 +140,21 @@ class Browser(QMainWindow):
         self.setWindowTitle("LibreXWebBrowser")
         self.setWindowIcon(QIcon("browser/assets/icons/favicons/favicon.ico"))
 
-        # URL bar
         self.url_bar = QLineEdit()
         self.url_bar.setPlaceholderText("Enter URL or search query")
         self.url_bar.returnPressed.connect(self.on_url_entered)
         self.load_stylesheet("browser/styles/stylesheets/qss/styles.qss")
 
-        # Progress bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setMaximum(100)
         self.progress_bar.hide()
 
-        # Tab widget
         self.tab_widget = QTabWidget()
         self.tab_widget.setTabsClosable(True)
         self.tab_widget.setMovable(True)
         self.tab_widget.tabCloseRequested.connect(self.close_current_tab)
         self.tab_widget.currentChanged.connect(self.current_tab_changed)
 
-        # Plus button for new tabs
         self.plus_button = QPushButton("+")
         qt_app = QApplication.instance()
         if qt_app is None:
@@ -177,7 +171,6 @@ class Browser(QMainWindow):
         self.plus_button.clicked.connect(self.new_tab)
         self.tab_widget.setCornerWidget(self.plus_button, Qt.TopRightCorner)
 
-        # Open an initial tab.
         self.new_tab()
 
         central_widget = QWidget()

@@ -180,7 +180,6 @@ class Browser(QMainWindow):
         # Open an initial tab.
         self.new_tab()
 
-        # Set main layout
         central_widget = QWidget()
         layout = QVBoxLayout()
         layout.addWidget(self.url_bar)

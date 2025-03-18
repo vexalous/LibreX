@@ -300,7 +300,6 @@ class Browser(QMainWindow):
         self.current_navigation_id += 1
         current_id = self.current_navigation_id
         user_input_lower = user_input.lower()
-        
         if (not user_input_lower.startswith(("http://", "https://"))
                 and "." in user_input):
             user_input = "".join(["https://", user_input])
@@ -311,7 +310,7 @@ class Browser(QMainWindow):
             self.threadpool.start(task)
             logging.debug("Started navigation task for '%s' with id %s.",
                           user_input, current_id)
-        except Exception as e_navigation_task:
+        except (RuntimeError, AttributeError) as e_navigation_task:
             logging.debug("Error occured during navigation: %s", e_navigation_task)
 
     def on_navigation_result(self, url: QUrl, nav_id: int):

@@ -62,9 +62,12 @@ class WorkerSignals(QObject):
         """Emit the error signal with an error message and navigation ID."""
         self.error.emit(message, nav_id)
 
-    def reset(self):
-        """A dummy public method to satisfy the minimum public method count."""
-        pass
+    def reset(self):  
+        """
+        Dummy method to satisfy minimum public method count.
+        Returns a tuple of signals.
+        """
+        return (self.result, self.error)
 
 
 class NavigationTask(QRunnable):
@@ -220,11 +223,10 @@ class Browser(QMainWindow):
         except (OSError, IOError) as e:
             logging.error("Failed to load stylesheet from %s: %s", path, e)
 
-    def new_tab(self, url: str = None, label: str = "New Tab",
-                switch: bool = True):
+    def new_tab(self, url: str = None, label: str = "New Tab", switch: bool = True):
         """
         Open a new tab with an optional URL and label.
-
+        
         :param url: URL to load (defaults to DEFAULT_SEARCH_ENGINE)
         :param label: Label for the tab
         :param switch: Whether to immediately switch to the new tab
@@ -240,7 +242,6 @@ class Browser(QMainWindow):
             index = self.tab_widget.addTab(web_view, label)
             if switch:
                 self.tab_widget.setCurrentIndex(index)
-            # Bind web_view to the lambda default parameters
             web_view.urlChanged.connect(
                 lambda qurl, wv=web_view: self._safe_update_url_bar(qurl, wv)
             )

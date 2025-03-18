@@ -62,7 +62,7 @@ class WorkerSignals(QObject):
         """Emit the error signal with an error message and navigation ID."""
         self.error.emit(message, nav_id)
 
-    def reset(self):  
+    def reset(self):
         """
         Dummy method to satisfy minimum public method count.
         Returns a tuple of signals.

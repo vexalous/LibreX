@@ -62,7 +62,7 @@ class WorkerSignals(QObject):
         """Emit the error signal with an error message and navigation ID."""
         self.error.emit(message, nav_id)
 
-    def reset(self):
+    def reset(self):  
         """
         Dummy method to satisfy minimum public method count.
         Returns a tuple of signals.
@@ -97,6 +97,12 @@ class NavigationTask(QRunnable):
                 self.url_str
             ]))
         self.signals.emit_result(url, self.nav_id)
+
+    def get_task_info(self):
+        """
+        Return a string describing this NavigationTask.
+        """
+        return f"NavigationTask(url_str={self.url_str}, nav_id={self.nav_id})"
 
 
 class Browser(QMainWindow):

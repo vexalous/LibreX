@@ -1,3 +1,0 @@
-new_tab=Ctrl+T
-close_tab=Ctrl+W
-close_browser=Ctrl+Shift+W

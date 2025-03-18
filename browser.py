@@ -103,13 +103,19 @@ class Browser(QMainWindow):
                 plus_button_scrn_min_height = screen_height * 0.0175
                 plus_button_scrn_max_width = screen_width * 0.025
                 plus_button_scrn_max_height = screen_height * 0.025
-                self.plus_button.setMinimumSize(plus_button_scrn_min_width, plus_button_scrn_min_height)
-                self.plus_button.setMaximumSize(plus_button_scrn_max_width, plus_button_scrn_max_height)
+                self.plus_button.setMinimumSize(
+                    plus_button_scrn_min_width, plus_button_scrn_min_height
+                )
+                self.plus_button.setMaximumSize(
+                    plus_button_scrn_max_width, plus_button_scrn_max_height
+                )
                 window = QWidget()
                 layout = QHBoxLayout()
                 layout.setSpacing(10)
                 self.plus_button.clicked.connect(lambda: self.new_tab())
-                self.tab_widget.setCornerWidget(self.plus_button, Qt.TopRightCorner)
+                self.tab_widget.setCornerWidget(
+                    self.plus_button, Qt.TopRightCorner
+                )
                 self.new_tab()
                 central_widget = QWidget()
                 layout = QVBoxLayout()
@@ -119,7 +125,7 @@ class Browser(QMainWindow):
                 central_widget.setLayout(layout)
                 self.setCentralWidget(central_widget)
             except Exception as e_init:
-                logging.error(f"Failed to initialize Browser window: {e_init}")
+                logging.error("Failed to initialize Browser window: %s", e_init)
         except Exception as e:
             logging.exception("Error in Browser window initialization.")
     def close_browser(self):
@@ -129,22 +135,28 @@ class Browser(QMainWindow):
             with open(file_path, 'r') as file:
                 return file.read().strip()
         except Exception as e_file:
-            logging.exception(f"Error reading CSP header file: {e_file}")
+            logging.exception("Error reading CSP header file: %s", e_file)
             return
     def set_csp_header(self):
         try:
             csp_header = read_csp_header("browser/config/csp/csp_header.txt")
             if csp_header:
-                self.web_view.page().profile().setHttpUserAgent(csp_header)
-                self.web_view.page().profile().setHttpHeader("Content-Security-Policy", csp_header.encode('utf-8'))
+                self.web_view.page().profile().setHttpUserAgent(
+                    csp_header
+                )
+                self.web_view.page().profile().setHttpHeader(
+                    "Content-Security-Policy", csp_header.encode(
+                        'utf-8'
+                    )
+                )
         except Exception as e_csp:
-            logging.exception(f"Error setting CSP header: {e_csp}")
+            logging.exception("Error setting CSP header: %s", e_csp)
     def load_stylesheet(self, path):
         try:
             with open(path, 'r') as file:
                 self.setStyleSheet(file.read())
         except Exception as e:
-            logging.error(f"Failed to load stylesheet from {path}: {e}")
+            logging.error("Failed to load stylesheet from %s: %s", path, e)
     def new_tab(self, url: str = None, label: str = "New Tab", switch: bool = True):
         browser = None
         try:

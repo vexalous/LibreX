@@ -240,7 +240,8 @@ class Browser(QMainWindow):
                     self.close_browser()
                 except Exception as e_close_browser_no_tabs_left:
                     logging.exception(
-                        "Error occured while attempting to close browser, no tabs left: %s", e_close_browser_no_tabs_left
+                        "Error occured while attempting to close browser, no tabs left: %s",
+                        e_close_browser_no_tabs_left
                     )
         except Exception as e_close_tab:
             logging.exception(
@@ -345,11 +346,17 @@ class Browser(QMainWindow):
                     try:
                         self.url_bar.setText(qurl.toString())
                     except Exception as e_set_url_bar_text:
-                        logging.warning(f"Failed to set URL bar text in update_url_bar: {e_set_url_bar_text}")
+                        logging.warning(
+                            "Failed to set URL bar text in update_url_bar: %s", e_set_url_bar_text
+                        )
             except Exception as e_get_current_widget:
-                logging.warning(f"Failed to get current tab widget in update_url_bar: {e_get_current_widget}")
+                logging.warning(
+                    "Failed to get current tab widget in update_url_bar: %s", e_get_current_widget
+                )
         except Exception as e_update_url_bar:
-            logging.exception("Error updating URL bar.")
+            logging.exception(
+                "Error updating URL bar."
+            )
 
     def truncate_title(self, title, max_length=15):
         try:

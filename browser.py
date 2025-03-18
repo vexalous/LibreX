@@ -185,25 +185,14 @@ class Browser(QMainWindow):
         """Close the browser window."""
         self.close()
 
-    def read_csp_header(self, file_path):
-        """
-        Read the Content Security Policy header from the provided file path.
-        Returns the header string (or empty string on failure).
-        """
-        try:
-            with open(file_path, "r", encoding="utf-8") as file:
-                return file.read().strip()
-        except (OSError, IOError) as e:
-            logging.exception("Error reading CSP header file: %s", e)
-            return ""
-
     def set_csp_header(self):
         """
         Set the Content Security Policy header for the current web view.
         (Uses self.web_view if it exists.)
         """
-        csp_header = self.read_csp_header("browser/config/csp/csp_header.txt")
-        if csp_header and hasattr(self, "web_view") and self.web_view is not None:
+        csp_header = "Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests; block-all-mixed-content; frame-ancestors 'none'; worker-src 'self'; manifest-src 'self'; require-sri-for script style; require-trusted-types-for 'script'"
+
+        if hasattr(self, "web_view") and self.web_view is not None:
             self.web_view.page().profile().setHttpUserAgent(csp_header)
             self.web_view.page().profile().setHttpHeader(
                 "Content-Security-Policy", csp_header.encode("utf-8")

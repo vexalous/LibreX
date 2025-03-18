@@ -71,12 +71,33 @@ class Browser(QMainWindow):
         super().__init__()
         try:
             try:
-                self.new_tab_shortcut = QShortcut(QKeySequence(shortcuts.get("new_tab", "Ctrl+T")), self)
-                self.new_tab_shortcut.activated.connect(self.new_tab)
-                self.close_tab_shortcut = QShortcut(QKeySequence(shortcuts.get("close_tab", "Ctrl+W")), self)
-                self.close_tab_shortcut.activated.connect(self.close_current_tab_index)
-                self.close_browser_shortcut = QShortcut(QKeySequence(shortcuts.get("close_browser", "Ctrl+Shift+W")), self)
-                self.close_browser_shortcut.activated.connect(self.close_browser)
+                self.new_tab_shortcut = QShortcut(
+                    QKeySequence(
+                        shortcuts.get(
+                            "new_tab", "Ctrl+T")
+                    ), self
+                )
+                self.new_tab_shortcut.activated.connect(
+                    self.new_tab
+                )
+                self.close_tab_shortcut = QShortcut(
+                    QKeySequence(
+                        shortcuts.get(
+                            "close_tab", "Ctrl+W")
+                    ), self
+                )
+                self.close_tab_shortcut.activated.connect(
+                    self.close_current_tab_index
+                )
+                self.close_browser_shortcut = QShortcut(
+                    QKeySequence(
+                        shortcuts.get(
+                            "close_browser", "Ctrl+Shift+W")
+                    ), self
+                )
+                self.close_browser_shortcut.activated.connect(
+                    self.close_browser
+                )
                 self.setWindowTitle("LibreX Web Browser")
                 icon = QIcon(browser/assets/icons/favicons/favicon.ico)
                 self.setWindowIcon(icon)
@@ -85,8 +106,12 @@ class Browser(QMainWindow):
                 self.default_search_engine_url = "https://duckduckgo.com"
                 self.url_bar = QLineEdit()
                 self.url_bar.setPlaceholderText("Enter URL or search query")
-                self.load_stylesheet('browser/styles/stylesheets/qss/styles.qss')
-                self.url_bar.returnPressed.connect(self.on_url_entered)
+                self.load_stylesheet(
+                    'browser/styles/stylesheets/qss/styles.qss'
+                )
+                self.url_bar.returnPressed.connect(
+                    self.on_url_entered
+                )
                 self.progress_bar = QProgressBar()
                 self.progress_bar.setMaximum(100)
                 self.progress_bar.hide()

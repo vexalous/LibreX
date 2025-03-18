@@ -1,15 +1,17 @@
+#!/usr/bin/env python3
 """
 LibreXWebBrowser implementation using PySide6.
 """
 
 import sys
 import logging
-import os
 
-from PySide6.QtCore import QUrl, Qt, QObject, Signal, QRunnable, QThreadPool, QTimer
+from PySide6.QtCore import (
+    QUrl, Qt, QObject, Signal, QRunnable, QThreadPool, QTimer
+)
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QWidget, QLineEdit,
-    QTabWidget, QPushButton, QProgressBar, QHBoxLayout
+    QApplication, QMainWindow, QVBoxLayout, QWidget, QLineEdit, QTabWidget,
+    QPushButton, QProgressBar
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtGui import QIcon, QKeySequence, QShortcut
@@ -17,15 +19,15 @@ from PySide6.QtGui import QIcon, QKeySequence, QShortcut
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s [%(levelname)-8s] %(message)s',
-    datefmt='%H:%M:%S'
+    format="%(asctime)s [%(levelname)-8s] %(message)s",
+    datefmt="%H:%M:%S"
 )
 
-# Global configuration variables
-default_search_engine = "https://duckduckgo.com"
-default_search_engine_search_path = "/?q="
+# Global constants (all in UPPER_CASE)
+DEFAULT_SEARCH_ENGINE = "https://duckduckgo.com"
+DEFAULT_SEARCH_ENGINE_SEARCH_PATH = "/?q="
 
-shortcuts = {
+SHORTCUTS = {
     "new_tab": "Ctrl+T",
     "close_tab": "Ctrl+W",
     "close_browser": "Ctrl+Shift+W"
@@ -43,130 +45,159 @@ sys.excepthook = global_exception_hook
 
 class WorkerSignals(QObject):
     """
-    Signals for worker threads.
+    Signals to be used with worker threads.
     """
+    def __init__(self):
+        super().__init__()
+
     result = Signal(QUrl, int)
     error = Signal(str, int)
+
+    def emit_result(self, url: QUrl, nav_id: int):
+        """Emit the result signal with a URL and navigation ID."""
+        self.result.emit(url, nav_id)
+
+    def emit_error(self, message: str, nav_id: int):
+        """Emit the error signal with an error message and navigation ID."""
+        self.error.emit(message, nav_id)
 
 
 class NavigationTask(QRunnable):
     """
     Task to process a navigation request.
+    Validates and adjusts a URL; emits either a result or an error.
     """
     def __init__(self, url_str: str, nav_id: int):
-        """Initialize a NavigationTask with a URL string and a navigation id."""
         super().__init__()
         self.url_str = url_str
         self.nav_id = nav_id
         self.signals = WorkerSignals()
 
     def run(self):
-        """Run the navigation task to process the URL and emit a result or error."""
+        """Run the navigation task to validate and adjust the URL."""
         try:
             try:
                 url = QUrl(self.url_str)
             except Exception as e:
-                logging.error("Failed to create QUrl from '%s': %s", self.url_str, e)
-                self.signals.error.emit("Invalid URL format: %s" % e, self.nav_id)
+                logging.error(
+                    "Failed to create QUrl from '%s': %s", self.url_str, e
+                )
+                error_msg = f"Invalid URL format: {e}"
+                self.signals.emit_error(error_msg, self.nav_id)
                 return
 
             if not url.isValid() or url.scheme() == "":
                 try:
-                    url = QUrl(''.join([
-                        default_search_engine,
-                        default_search_engine_search_path,
+                    url = QUrl("".join([
+                        DEFAULT_SEARCH_ENGINE,
+                        DEFAULT_SEARCH_ENGINE_SEARCH_PATH,
                         self.url_str
                     ]))
                 except Exception as e:
                     logging.error("Failed to create search URL: %s", e)
-                    self.signals.error.emit("Search URL creation error: %s" % e, self.nav_id)
+                    error_msg = f"Search URL creation error: {e}"
+                    self.signals.emit_error(error_msg, self.nav_id)
                     return
 
-            self.signals.result.emit(url, self.nav_id)
-
+            self.signals.emit_result(url, self.nav_id)
         except Exception as e:
-            logging.exception("NavigationTask encountered a critical error in run method.")
-            self.signals.error.emit("Navigation task critical failure: %s" % e, self.nav_id)
+            logging.exception(
+                "NavigationTask encountered a critical error in run method."
+            )
+            error_msg = f"Navigation task critical failure: {e}"
+            self.signals.emit_error(error_msg, self.nav_id)
 
 
 class Browser(QMainWindow):
     """
-    Main browser window with tabs, a URL bar, and navigation tasks.
+    Main browser window with tabs, a URL bar, a progress bar, and navigation.
     """
     def __init__(self):
-        """Initialize the browser window and its components."""
+        """Initialize the browser window and set up its components."""
         super().__init__()
         try:
-            # Set up keyboard shortcuts
-            self.new_tab_shortcut = QShortcut(
-                QKeySequence(shortcuts.get("new_tab", "Ctrl+T")), self
-            )
-            self.new_tab_shortcut.activated.connect(self.new_tab)
-            self.close_tab_shortcut = QShortcut(
-                QKeySequence(shortcuts.get("close_tab", "Ctrl+W")), self
-            )
-            self.close_tab_shortcut.activated.connect(self.close_current_tab_index)
-            self.close_browser_shortcut = QShortcut(
-                QKeySequence(shortcuts.get("close_browser", "Ctrl+Shift+W")), self
-            )
-            self.close_browser_shortcut.activated.connect(self.close_browser)
-
-            self.setWindowTitle("LibreXWebBrowser")
-            icon = QIcon("browser/assets/icons/favicons/favicon.ico")
-            self.setWindowIcon(icon)
-
-            self.threadpool = QThreadPool.globalInstance()
+            # Group the keyboard shortcuts together in a list
+            self.shortcuts = []
             self.current_navigation_id = 0
-            self.default_search_engine_url = "https://duckduckgo.com"
+            self.threadpool = QThreadPool.globalInstance()
 
-            # Set up URL bar
-            self.url_bar = QLineEdit()
-            self.url_bar.setPlaceholderText("Enter URL or search query")
-            self.url_bar.returnPressed.connect(self.on_url_entered)
-            self.load_stylesheet('browser/styles/stylesheets/qss/styles.qss')
-
-            # Set up progress bar
-            self.progress_bar = QProgressBar()
-            self.progress_bar.setMaximum(100)
-            self.progress_bar.hide()
-
-            # Set up tab widget
-            self.tab_widget = QTabWidget()
-            self.tab_widget.setTabsClosable(True)
-            self.tab_widget.setMovable(True)
-            self.tab_widget.tabCloseRequested.connect(self.close_current_tab)
-            self.tab_widget.currentChanged.connect(self.current_tab_changed)
-
-            # Set up plus button for new tabs
-            self.plus_button = QPushButton("+")
-            app = QApplication.instance()
-            if app is None:
-                raise RuntimeError("No QApplication instance available")
-            screen_geometry = app.primaryScreen().geometry()
-            screen_width = screen_geometry.width()
-            screen_height = screen_geometry.height()
-            plus_button_scrn_min_width = int(screen_width * 0.0175)
-            plus_button_scrn_min_height = int(screen_height * 0.0175)
-            plus_button_scrn_max_width = int(screen_width * 0.025)
-            plus_button_scrn_max_height = int(screen_height * 0.025)
-            self.plus_button.setMinimumSize(plus_button_scrn_min_width, plus_button_scrn_min_height)
-            self.plus_button.setMaximumSize(plus_button_scrn_max_width, plus_button_scrn_max_height)
-            self.plus_button.clicked.connect(self.new_tab)
-            self.tab_widget.setCornerWidget(self.plus_button, Qt.TopRightCorner)
-
-            # Open an initial tab.
-            self.new_tab()
-
-            # Set up layout
-            central_widget = QWidget()
-            layout = QVBoxLayout()
-            layout.addWidget(self.url_bar)
-            layout.addWidget(self.progress_bar)
-            layout.addWidget(self.tab_widget)
-            central_widget.setLayout(layout)
-            self.setCentralWidget(central_widget)
+            self.setup_shortcuts()
+            self.setup_ui()
         except Exception as e:
             logging.exception("Error in Browser window initialization: %s", e)
+
+    def setup_shortcuts(self):
+        """Set up the keyboard shortcuts and store them in self.shortcuts."""
+        new_tab_sc = QShortcut(
+            QKeySequence(SHORTCUTS.get("new_tab", "Ctrl+T")), self
+        )
+        new_tab_sc.activated.connect(self.new_tab)
+        self.shortcuts.append(new_tab_sc)
+
+        close_tab_sc = QShortcut(
+            QKeySequence(SHORTCUTS.get("close_tab", "Ctrl+W")), self
+        )
+        close_tab_sc.activated.connect(self.close_current_tab_index)
+        self.shortcuts.append(close_tab_sc)
+
+        close_browser_sc = QShortcut(
+            QKeySequence(SHORTCUTS.get("close_browser", "Ctrl+Shift+W")), self
+        )
+        close_browser_sc.activated.connect(self.close_browser)
+        self.shortcuts.append(close_browser_sc)
+
+    def setup_ui(self):
+        """Set up the user interface elements of the browser."""
+        self.setWindowTitle("LibreXWebBrowser")
+        icon = QIcon("browser/assets/icons/favicons/favicon.ico")
+        self.setWindowIcon(icon)
+
+        # URL bar
+        self.url_bar = QLineEdit()
+        self.url_bar.setPlaceholderText("Enter URL or search query")
+        self.url_bar.returnPressed.connect(self.on_url_entered)
+        self.load_stylesheet("browser/styles/stylesheets/qss/styles.qss")
+
+        # Progress bar
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setMaximum(100)
+        self.progress_bar.hide()
+
+        # Tab widget
+        self.tab_widget = QTabWidget()
+        self.tab_widget.setTabsClosable(True)
+        self.tab_widget.setMovable(True)
+        self.tab_widget.tabCloseRequested.connect(self.close_current_tab)
+        self.tab_widget.currentChanged.connect(self.current_tab_changed)
+
+        # Plus button for new tabs
+        self.plus_button = QPushButton("+")
+        qt_app = QApplication.instance()
+        if qt_app is None:
+            raise RuntimeError("No QApplication instance available")
+        screen_geom = qt_app.primaryScreen().geometry()
+        screen_width = screen_geom.width()
+        screen_height = screen_geom.height()
+        min_width = int(screen_width * 0.0175)
+        min_height = int(screen_height * 0.0175)
+        max_width = int(screen_width * 0.025)
+        max_height = int(screen_height * 0.025)
+        self.plus_button.setMinimumSize(min_width, min_height)
+        self.plus_button.setMaximumSize(max_width, max_height)
+        self.plus_button.clicked.connect(self.new_tab)
+        self.tab_widget.setCornerWidget(self.plus_button, Qt.TopRightCorner)
+
+        # Open an initial tab.
+        self.new_tab()
+
+        # Set main layout
+        central_widget = QWidget()
+        layout = QVBoxLayout()
+        layout.addWidget(self.url_bar)
+        layout.addWidget(self.progress_bar)
+        layout.addWidget(self.tab_widget)
+        central_widget.setLayout(layout)
+        self.setCentralWidget(central_widget)
 
     def close_browser(self):
         """Close the browser window."""
@@ -174,11 +205,11 @@ class Browser(QMainWindow):
 
     def read_csp_header(self, file_path):
         """
-        Read the Content Security Policy header from the specified file.
-        Returns the header string.
+        Read the Content Security Policy header from the provided file path.
+        Returns the header string (or empty string on failure).
         """
         try:
-            with open(file_path, 'r', encoding="utf-8") as file:
+            with open(file_path, "r", encoding="utf-8") as file:
                 return file.read().strip()
         except Exception as e:
             logging.exception("Error reading CSP header file: %s", e)
@@ -194,28 +225,30 @@ class Browser(QMainWindow):
             if csp_header:
                 self.web_view.page().profile().setHttpUserAgent(csp_header)
                 self.web_view.page().profile().setHttpHeader(
-                    "Content-Security-Policy", csp_header.encode('utf-8')
+                    "Content-Security-Policy", csp_header.encode("utf-8")
                 )
         except Exception as e:
             logging.exception("Error setting CSP header: %s", e)
 
     def load_stylesheet(self, path):
         """
-        Load and apply a stylesheet from the given file path.
+        Load a stylesheet from the given file path and apply it.
         """
         try:
-            with open(path, 'r', encoding="utf-8") as file:
+            with open(path, "r", encoding="utf-8") as file:
                 stylesheet = file.read()
-                self.setStyleSheet(stylesheet)
+            self.setStyleSheet(stylesheet)
         except Exception as e:
             logging.error("Failed to load stylesheet from %s: %s", path, e)
 
-    def new_tab(self, url: str = None, label: str = "New Tab", switch: bool = True):
+    def new_tab(self, url: str = None, label: str = "New Tab",
+                switch: bool = True):
         """
-        Open a new tab in the browser.
-        :param url: URL to load (defaults to the default search engine).
-        :param label: Label for the tab.
-        :param switch: Whether to switch immediately to the new tab.
+        Open a new tab with an optional URL and label.
+        
+        :param url: URL to load (defaults to DEFAULT_SEARCH_ENGINE)
+        :param label: Label for the tab
+        :param switch: Whether to immediately switch to the new tab
         """
         web_view = None
         try:
@@ -223,20 +256,27 @@ class Browser(QMainWindow):
             web_view.loadStarted.connect(self.on_load_started)
             web_view.loadProgress.connect(self.on_load_progress)
             web_view.loadFinished.connect(self.on_load_finished)
-            url_obj = QUrl(url) if url else QUrl(self.default_search_engine_url)
+            url_obj = QUrl(url) if url else QUrl(DEFAULT_SEARCH_ENGINE)
             web_view.setUrl(url_obj)
             index = self.tab_widget.addTab(web_view, label)
             if switch:
                 self.tab_widget.setCurrentIndex(index)
-            web_view.urlChanged.connect(lambda qurl: self.safe_update_url_bar(qurl, web_view))
-            web_view.loadFinished.connect(lambda _: self.safe_update_tab_title(web_view))
+            web_view.urlChanged.connect(
+                lambda qurl, wv=web_view: self.safe_update_url_bar(qurl, wv)
+            )
+            web_view.loadFinished.connect(
+                lambda _, wv=web_view: self.safe_update_tab_title(wv)
+            )
         except Exception as e:
             logging.exception("Error creating a new tab: %s", e)
             if web_view is not None:
                 try:
                     web_view.deleteLater()
                 except Exception as cleanup_error:
-                    logging.warning("Failed to clean up partially created browser view: %s", cleanup_error)
+                    logging.warning(
+                        "Failed to clean up partially created browser view: %s",
+                        cleanup_error
+                    )
 
     def close_current_tab_index(self):
         """Close the currently active tab."""
@@ -247,14 +287,14 @@ class Browser(QMainWindow):
             logging.exception("Error occurred in close_current_tab_index: %s", e)
 
     def safe_update_url_bar(self, qurl: QUrl, browser: QWebEngineView):
-        """Safely update the URL bar for the given browser view."""
+        """Safely update the URL bar for the specified browser view."""
         try:
             self.update_url_bar(qurl, browser)
         except Exception as e:
             logging.exception("Error in safe_update_url_bar: %s", e)
 
     def safe_update_tab_title(self, browser: QWebEngineView):
-        """Safely update the tab title for the given browser view."""
+        """Safely update the tab title for the specified browser view."""
         try:
             self.update_tab_title(browser)
         except Exception as e:
@@ -272,7 +312,9 @@ class Browser(QMainWindow):
                 try:
                     self.close_browser()
                 except Exception as e:
-                    logging.exception("Error occurred while attempting to close browser (no tabs left): %s", e)
+                    logging.exception(
+                        "Error while attempting to close browser (no tabs left): %s", e
+                    )
         except Exception as e:
             logging.exception("Error closing current tab: %s", e)
 
@@ -289,12 +331,14 @@ class Browser(QMainWindow):
                 try:
                     self.url_bar.clear()
                 except Exception as e:
-                    logging.warning("Failed to clear URL bar on tab change (no browser): %s", e)
+                    logging.warning("Failed to clear URL bar (no browser): %s", e)
         except Exception as e:
             logging.exception("Error handling tab change: %s", e)
 
     def on_url_entered(self):
-        """Process the entered URL and initiate navigation."""
+        """
+        Process the URL entered in the URL bar and initiate navigation.
+        """
         try:
             try:
                 user_input = self.url_bar.text().strip()
@@ -305,11 +349,12 @@ class Browser(QMainWindow):
             if not user_input:
                 return
 
-            current_id = self.current_navigation_id + 1
-            self.current_navigation_id = current_id
+            self.current_navigation_id += 1
+            current_id = self.current_navigation_id
 
             user_input_lower = user_input.lower()
-            if not user_input_lower.startswith(("http://", "https://")) and "." in user_input:
+            if (not user_input_lower.startswith(("http://", "https://"))
+                    and "." in user_input):
                 user_input = "".join(["https://", user_input])
 
             try:
@@ -317,7 +362,11 @@ class Browser(QMainWindow):
                 task.signals.result.connect(self.on_navigation_result)
                 task.signals.error.connect(self.on_navigation_error)
                 self.threadpool.start(task)
-                logging.debug("Started navigation task for '%s' with id %s.", user_input, current_id)
+                logging.debug(
+                    "Started navigation task for '%s' with id %s.",
+                    user_input,
+                    current_id
+                )
             except Exception as e_start_nav_task:
                 logging.error("Failed to start navigation task: %s", e_start_nav_task)
 
@@ -331,22 +380,29 @@ class Browser(QMainWindow):
                 logging.debug("Ignoring outdated navigation (id %s).", nav_id)
                 return
 
-            logging.debug("Navigation result received: %s (id %s).", url.toString(), nav_id)
+            logging.debug(
+                "Navigation result received: %s (id %s).",
+                url.toString(),
+                nav_id
+            )
             try:
                 current_browser = self.tab_widget.currentWidget()
             except Exception as e_get_current_browser:
-                logging.warning("Failed to get current browser widget: %s", e_get_current_browser)
+                logging.warning("Failed to get current browser widget: %s",
+                                e_get_current_browser)
                 return
 
             if current_browser:
                 try:
                     current_browser.stop()
                 except Exception as ex_stop_load:
-                    logging.warning("Error stopping current browser load: %s", ex_stop_load)
+                    logging.warning("Error stopping current browser load: %s",
+                                    ex_stop_load)
                 try:
                     current_browser.setUrl(url)
                 except Exception as e_set_browser_url:
-                    logging.error("Failed to set URL for current browser: %s", e_set_browser_url)
+                    logging.error("Failed to set URL for current browser: %s",
+                                  e_set_browser_url)
             else:
                 logging.error("No active browser tab available to load the URL.")
         except Exception as e_nav_result:
@@ -357,7 +413,9 @@ class Browser(QMainWindow):
         logging.error("Navigation error (id %s): %s", nav_id, error_message)
 
     def update_url_bar(self, qurl: QUrl, browser: QWebEngineView):
-        """Update the URL bar if the given browser view is active."""
+        """
+        Update the URL bar if the given browser view is active.
+        """
         try:
             if self.tab_widget.currentWidget() == browser:
                 self.url_bar.setText(qurl.toString())
@@ -370,13 +428,18 @@ class Browser(QMainWindow):
         Returns the original title if shorter than max_length.
         """
         try:
-            return title if len(title) <= max_length else "".join([title[:max_length], "..."])
+            if len(title) <= max_length:
+                return title
+            else:
+                return "".join([title[:max_length], "..."])
         except Exception as e:
             logging.exception("Error truncating title: %s", e)
             return title
 
     def update_tab_title(self, browser: QWebEngineView):
-        """Update the tab title based on the browser view's title or URL."""
+        """
+        Update the tab title based on the browser view's title or URL.
+        """
         try:
             index = self.tab_widget.indexOf(browser)
             if index == -1:
@@ -404,10 +467,13 @@ class Browser(QMainWindow):
             try:
                 self.progress_bar.setValue(progress)
             except Exception as e:
-                logging.warning("Failed to set progress bar value to %s: %s", progress, e)
+                logging.warning("Failed to set progress bar value to %s: %s",
+                                progress, e)
 
     def on_load_finished(self):
-        """Finish the page load by hiding the progress bar."""
+        """
+        Finish the page load by setting progress to 100 and hiding the progress bar.
+        """
         try:
             if self.sender() == self.tab_widget.currentWidget():
                 try:
@@ -421,10 +487,13 @@ class Browser(QMainWindow):
 
 if __name__ == "__main__":
     try:
-        app = QApplication(sys.argv)
+        qt_app = QApplication(sys.argv)
         window = Browser()
         window.showMaximized()
-        sys.exit(app.exec())
+        sys.exit(qt_app.exec())
     except Exception as e_app_initialization:
-        logging.critical("An error occurred while initializing the application: %s", e_app_initialization)
+        logging.critical(
+            "An error occurred while initializing the application: %s",
+            e_app_initialization
+        )
         sys.exit(1)
